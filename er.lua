@@ -1,7 +1,10 @@
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Using your provided values
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
 local x = 57
 local y = 3
 local startZ = 30000
@@ -10,16 +13,14 @@ local stepZ = -2000
 local duration = 0.5
 local stopTweening = false
 
-local part = Instance.new("Part") -- The moving object
-part.Position = Vector3.new(x, y, startZ)
-part.Anchored = true
-part.Parent = game.Workspace
+local teleportCount = 10
+local delayTime = 0.1
 
-local player = Players.LocalPlayer
+-- GUI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:FindFirstChildOfClass("PlayerGui")
 
-local bondCounter = Instance.new("TextLabel") -- GUI counter
+local bondCounter = Instance.new("TextLabel")
 bondCounter.Size = UDim2.new(0, 200, 0, 50)
 bondCounter.Position = UDim2.new(0.5, -100, 0, 50)
 bondCounter.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -29,28 +30,38 @@ bondCounter.Text = "Bonds Found: 0"
 bondCounter.Parent = screenGui
 
 local bondCount = 0
-local currentZ = startZ
 
-function checkForBonds()
+-- Disable Collisions
+RunService.Stepped:Connect(function()
+    for _, descendant in pairs(character:GetDescendants()) do
+        if descendant:IsA("BasePart") then
+            descendant.CanCollide = false
+        end
+    end
+end)
+
+-- Bond Detection Function
+local function checkForBonds(currentZ)
     for _, bond in pairs(workspace.RuntimeItems:GetChildren()) do
-        if bond:IsA("Part") and (bond.Position.Z > currentZ + stepZ and bond.Position.Z <= currentZ) then
+        if bond:IsA("BasePart") and bond.Position.Z <= currentZ and bond.Position.Z > currentZ + stepZ then
             bondCount += 1
         end
     end
     bondCounter.Text = "Bonds Found: " .. bondCount
 end
 
-while currentZ > endZ and not stopTweening do
-    local newPosition = Vector3.new(x, y, currentZ + stepZ)
-    
+-- Tween Loop
+for z = startZ, endZ, stepZ do
+    if stopTweening then break end
+    local adjustedY = math.max(y, 3)
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(part, tweenInfo, {Position = newPosition})
+    local goal = {CFrame = CFrame.new(Vector3.new(x, adjustedY, z))}
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
     
     tween:Play()
     tween.Completed:Wait()
     
-    currentZ += stepZ
-    checkForBonds()
+    checkForBonds(z) -- Update bond count during tween
 end
 
 print("Tweening complete. Total Bonds Found: " .. bondCount)
