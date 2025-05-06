@@ -42,9 +42,14 @@ end)
 
 -- Bond Detection Function
 local function checkForBonds(currentZ)
-    for _, bond in pairs(workspace.RuntimeItems:GetChildren()) do
-        if bond:IsA("BasePart") and bond.Position.Z <= currentZ and bond.Position.Z > currentZ + stepZ then
-            bondCount += 1
+    for _, bondModel in pairs(workspace.RuntimeItems:GetChildren()) do
+        if bondModel:IsA("Model") and bondModel.PrimaryPart then
+            local bondZ = bondModel.PrimaryPart.Position.Z
+            
+            -- Expanding bounds slightly to ensure detection
+            if bondZ <= currentZ and bondZ > currentZ + stepZ * 1.1 then
+                bondCount += 1
+            end
         end
     end
     bondCounter.Text = "Bonds Found: " .. bondCount
