@@ -1,72 +1,162 @@
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local x = 57
-local y = 3
-local startZ = 30000
-local endZ = -49032.99
-local stepZ = -2000
-local duration = 0.5
-local stopTweening = false
+local LocalPlayer = Players.LocalPlayer
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local hum = character:WaitForChild("Humanoid")
 
-local teleportCount = 10
-local delayTime = 0.1
+if not character.PrimaryPart then
+    character.PrimaryPart = hrp
+end
 
--- GUI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:FindFirstChildOfClass("PlayerGui")
+local storeRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("StoreItem")
+local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
 
-local bondCounter = Instance.new("TextLabel")
-bondCounter.Size = UDim2.new(0, 200, 0, 50)
-bondCounter.Position = UDim2.new(0.5, -100, 0, 50)
-bondCounter.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-bondCounter.TextColor3 = Color3.fromRGB(255, 255, 255)
-bondCounter.TextSize = 20
-bondCounter.Text = "Bonds Found: 0"
-bondCounter.Parent = screenGui
+local targetCFrame = Workspace.TeslaLab.Generator.Generator.CFrame
+for i = 1, 2 do
+    hrp.CFrame = targetCFrame
+    wait(1.1)
+end
 
-local bondCount = 0
-
--- Disable Collisions
-RunService.Stepped:Connect(function()
-    for _, descendant in pairs(character:GetDescendants()) do
-        if descendant:IsA("BasePart") then
-            descendant.CanCollide = false
+local function isUnanchored(model)
+    for _, p in pairs(model:GetDescendants()) do
+        if p:IsA("BasePart") and not p.Anchored then
+            return true
         end
     end
-end)
+    return false
+end
 
--- Bond Detection Function
-local function checkForBonds(currentZ)
-    for _, bondModel in pairs(workspace.RuntimeItems:GetChildren()) do
-        if bondModel:IsA("Model") and bondModel.PrimaryPart then
-            local bondZ = bondModel.PrimaryPart.Position.Z
-            
-            -- Expanding bounds slightly to ensure detection
-            if bondZ <= currentZ and bondZ > currentZ + stepZ * 1.1 then
-                bondCount += 1
+local function findNearestValidChair()
+    local runtimeFolder = Workspace:FindFirstChild("RuntimeItems")
+    if not runtimeFolder then return nil end
+
+local origin = targetCFrame.Position
+local closestSeat, shortest = nil, math.huge
+
+    for _, item in pairs(runtimeFolder:GetChildren()) do
+        if item:IsA("Model") and item.Name == "Chair" and isUnanchored(item) then
+            local seat = item:FindFirstChildWhichIsA("Seat", true)
+            if seat and not seat.Occupant then
+                local dist = (origin - seat.Position).Magnitude
+                if dist <= 300 and dist < shortest then
+                    closestSeat = seat
+                    shortest = dist
+                end
             end
         end
     end
-    bondCounter.Text = "Bonds Found: " .. bondCount
+
+    return closestSeat
 end
 
--- Tween Loop
-for z = startZ, endZ, stepZ do
-    if stopTweening then break end
-    local adjustedY = math.max(y, 3)
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-    local goal = {CFrame = CFrame.new(Vector3.new(x, adjustedY, z))}
-    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
-    
-    tween:Play()
-    tween.Completed:Wait()
-    
-    checkForBonds(z) -- Update bond count during tween
+local function sitAndWeldToSeat(seat)
+    assert(seat and seat:IsA("Seat"), "Invalid seat")
+
+    hrp.CFrame = seat.CFrame * CFrame.new(0, 2, 0)
+    wait(0.2)
+    seat:Sit(hum)
+
+    for i = 1, 30 do
+        if hum.SeatPart == seat then break end
+        wait(0.1)
+    end
+
+local weld = Instance.new("WeldConstraint")
+    weld.Name = "PersistentSeatWeld"
+    weld.Part0 = hrp
+    weld.Part1 = seat
+    weld.Parent = hrp
+
+    return seat, weld
 end
 
-print("Tweening complete. Total Bonds Found: " .. bondCount)
+task.spawn(function()
+    local chosenSeat, seatWeld
+    while not chosenSeat do
+        local seat = findNearestValidChair()
+        if seat then
+            local s, w = sitAndWeldToSeat(seat)
+            if s then
+                chosenSeat = s
+                seatWeld = w
+            end
+        end
+        wait(0.25)
+    end
+
+local sackTool = LocalPlayer.Backpack:FindFirstChild("Sack")
+    if sackTool then
+        hum:EquipTool(sackTool)
+        wait(0.5)
+    end
+
+local itemsToCollect = {
+        Workspace.RuntimeItems:FindFirstChild("LeftWerewolfArm"),
+        Workspace.RuntimeItems:FindFirstChild("LeftWerewolfLeg"),
+        Workspace.RuntimeItems:FindFirstChild("RightWerewolfArm"),
+        Workspace.RuntimeItems:FindFirstChild("RightWerewolfLeg"),
+        Workspace.RuntimeItems:FindFirstChild("WerewolfTorso"),
+        Workspace.RuntimeItems:FindFirstChild("BrainJar"),
+        Workspace.RuntimeItems:FindFirstChild("BrainJar") and Workspace.RuntimeItems.BrainJar:FindFirstChild("Brain")
+    }
+
+    for _, item in ipairs(itemsToCollect) do
+        if item and item:IsA("Instance") and item:IsDescendantOf(Workspace.RuntimeItems) then
+            local cframeTarget = item:IsA("BasePart") and item.CFrame or (item.PrimaryPart and item.PrimaryPart.CFrame)
+
+            if not cframeTarget then
+                for _, d in ipairs(item:GetDescendants()) do
+                    if d:IsA("BasePart") then
+                        cframeTarget = d.CFrame
+                        break
+                    end
+                end
+            end
+
+            if cframeTarget then
+                chosenSeat.CFrame = cframeTarget * CFrame.new(0, 2, 0)
+                wait(0.3)
+                storeRemote:FireServer(item)
+                wait(0.2)
+            end
+        end
+    end
+
+local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
+    if experimentTable then
+        local dropTarget = experimentTable.PrimaryPart
+        if not dropTarget then
+            for _, p in pairs(experimentTable:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    dropTarget = p
+                    break
+                end
+            end
+        end
+        if dropTarget then
+            chosenSeat.CFrame = dropTarget.CFrame * CFrame.new(0, 5, 0)
+            wait(0.75)
+        end
+    end
+
+    for _ = 1, #itemsToCollect do
+        dropRemote:FireServer()
+        wait(0.2)
+    end
+
+    if seatWeld and seatWeld.Parent then
+        seatWeld:Destroy()
+    end
+
+    hum.Jump = true
+end)
+
+
+task.spawn(function()
+    wait(1)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
+end)
