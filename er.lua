@@ -151,8 +151,6 @@ local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
     if seatWeld and seatWeld.Parent then
         seatWeld:Destroy()
     end
-
-    hum.Jump = true
 end)
 
 
