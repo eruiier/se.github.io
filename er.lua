@@ -62,8 +62,6 @@ Humanoid.WalkSpeed = 0
 
 
 
-
-
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -110,6 +108,7 @@ local function sitOnNthClosestChair(n)
         if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
     end)
     task.wait(0.5)
+    if Humanoid.Sit then Humanoid.Sit = false end -- Make sure not sitting
     seat:Sit(Humanoid)
     local weld = Instance.new("WeldConstraint")
     weld.Name = "PersistentSeatWeld"
@@ -143,12 +142,15 @@ task.spawn(function()
         end
         if stuck then
             retried = true
-            Humanoid.Jump = true -- force jump
+            HumanoidRootPart.Anchored = false
+            if Humanoid.Sit then Humanoid.Sit = false end
+            Humanoid.Jump = true -- force a real jump
             task.wait(0.25)
             sitOnNthClosestChair(2) -- sit on the 2nd closest available chair
         end
     end
 end)
+
 
 
 
