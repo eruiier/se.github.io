@@ -82,7 +82,7 @@ task.spawn(function()
     local alreadySat = false
     local chosenSeat = nil
 
-    -- PRE-TP and sit phase (the for loop you wanted restored)
+    -- PRE-TP and sit phase
     for i = 1, 2 do
         hrp.CFrame = targetCFrame
         wait(1.1)
@@ -106,89 +106,72 @@ task.spawn(function()
         end
     end
 
-    while true do
-        -- If you ever get unseated, try to sit again (sit-once logic)
-        if hum.SeatPart == nil then
-            alreadySat = false
-            chosenSeat = nil
-            while not chosenSeat do
-                hrp.CFrame = targetCFrame
-                wait(0.2)
-                local seat = findNearestValidChair()
-                if seat then
-                    local s = sitOnSeat(seat)
-                    if s then
-                        chosenSeat = s
-                        alreadySat = true
-                    end
-                end
-                wait(0.25)
-            end
-        end
+    -- Do item collect/drop logic ONCE (not a loop)
+    local sackTool = LocalPlayer.Backpack:FindFirstChild("Sack")
+    if sackTool then
+        hum:EquipTool(sackTool)
+        wait(0.5)
+    end
 
-        -- Do item collect/drop logic here
-        local sackTool = LocalPlayer.Backpack:FindFirstChild("Sack")
-        if sackTool then
-            hum:EquipTool(sackTool)
-            wait(0.5)
-        end
+    local itemsToCollect = {
+        Workspace.RuntimeItems:FindFirstChild("LeftWerewolfArm"),
+        Workspace.RuntimeItems:FindFirstChild("LeftWerewolfLeg"),
+        Workspace.RuntimeItems:FindFirstChild("RightWerewolfArm"),
+        Workspace.RuntimeItems:FindFirstChild("RightWerewolfLeg"),
+        Workspace.RuntimeItems:FindFirstChild("WerewolfTorso"),
+        Workspace.RuntimeItems:FindFirstChild("BrainJar"),
+        Workspace.RuntimeItems:FindFirstChild("BrainJar") and Workspace.RuntimeItems.BrainJar:FindFirstChild("Brain")
+    }
 
-        local itemsToCollect = {
-            Workspace.RuntimeItems:FindFirstChild("LeftWerewolfArm"),
-            Workspace.RuntimeItems:FindFirstChild("LeftWerewolfLeg"),
-            Workspace.RuntimeItems:FindFirstChild("RightWerewolfArm"),
-            Workspace.RuntimeItems:FindFirstChild("RightWerewolfLeg"),
-            Workspace.RuntimeItems:FindFirstChild("WerewolfTorso"),
-            Workspace.RuntimeItems:FindFirstChild("BrainJar"),
-            Workspace.RuntimeItems:FindFirstChild("BrainJar") and Workspace.RuntimeItems.BrainJar:FindFirstChild("Brain")
-        }
-
-        for _, item in ipairs(itemsToCollect) do
-            if item and item:IsA("Instance") and item:IsDescendantOf(Workspace.RuntimeItems) then
-                local cframeTarget = item:IsA("BasePart") and item.CFrame or (item.PrimaryPart and item.PrimaryPart.CFrame)
-                if not cframeTarget then
-                    for _, d in ipairs(item:GetDescendants()) do
-                        if d:IsA("BasePart") then
-                            cframeTarget = d.CFrame
-                            break
-                        end
-                    end
-                end
-                if cframeTarget and chosenSeat then
-                    chosenSeat.CFrame = cframeTarget * CFrame.new(0, 2, 0)
-                    wait(0.3)
-                    storeRemote:FireServer(item)
-                    wait(0.2)
-                end
-            end
-        end
-
-        local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
-        if experimentTable and chosenSeat then
-            local dropTarget = experimentTable.PrimaryPart
-            if not dropTarget then
-                for _, p in pairs(experimentTable:GetDescendants()) do
-                    if p:IsA("BasePart") then
-                        dropTarget = p
+    for _, item in ipairs(itemsToCollect) do
+        if item and item:IsA("Instance") and item:IsDescendantOf(Workspace.RuntimeItems) then
+            local cframeTarget = item:IsA("BasePart") and item.CFrame or (item.PrimaryPart and item.PrimaryPart.CFrame)
+            if not cframeTarget then
+                for _, d in ipairs(item:GetDescendants()) do
+                    if d:IsA("BasePart") then
+                        cframeTarget = d.CFrame
                         break
                     end
                 end
             end
-            if dropTarget then
-                chosenSeat.CFrame = dropTarget.CFrame * CFrame.new(0, 5, 0)
-                wait(0.75)
+            if cframeTarget and chosenSeat then
+                chosenSeat.CFrame = cframeTarget * CFrame.new(0, 2, 0)
+                wait(0.3)
+                storeRemote:FireServer(item)
+                wait(0.2)
             end
         end
-
-        for _ = 1, #itemsToCollect do
-            dropRemote:FireServer()
-            wait(0.2)
-        end
-
-        -- hrp.CFrame = targetCFrame -- REMOVED so you don't get stuck in a TP loop
-
-        wait(3)
     end
+
+    local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
+    if experimentTable and chosenSeat then
+        local dropTarget = experimentTable.PrimaryPart
+        if not dropTarget then
+            for _, p in pairs(experimentTable:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    dropTarget = p
+                    break
+                end
+            end
+        end
+        if dropTarget then
+            chosenSeat.CFrame = dropTarget.CFrame * CFrame.new(0, 5, 0)
+            wait(0.75)
+        end
+    end
+
+    for _ = 1, #itemsToCollect do
+        dropRemote:FireServer()
+        wait(0.2)
+    end
+
+    wait(3)
+
+    -- TP to generator ONCE, then idle
+    hrp.CFrame = targetCFrame
+
+    -- Idle forever, do nothing else
+    while true do wait() end
 end)
 
 task.spawn(function()
