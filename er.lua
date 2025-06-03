@@ -7,23 +7,27 @@ local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local hum = character:WaitForChild("Humanoid")
 
--- Function to enable noclip
-local noclipConnection
-local function enableNoclip()
-    if noclipConnection then return end -- Prevent multiple connections
-    noclipConnection = game:GetService("RunService").Stepped:Connect(function()
-        if LocalPlayer.Character then
-            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false -- Disable collisions
-                end
+-- Constant noclip loop for reliable wall bypass
+task.spawn(function()
+    while true do
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
         end
-    end)
-end
-enableNoclip()
+        task.wait(0.1)
+    end
+end)
 LocalPlayer.CharacterAdded:Connect(function()
-    enableNoclip()
+    task.wait(0.2)
+    while true do
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+        task.wait(0.1)
+    end
 end)
 
 if not character.PrimaryPart then
@@ -56,7 +60,7 @@ local function findNearestValidChair()
             local seat = item:FindFirstChildWhichIsA("Seat", true)
             if seat and not seat.Occupant then
                 local dist = (origin - seat.Position).Magnitude
-                if dist <= 100 and dist < shortest then -- Only chairs really close to the generator!
+                if dist <= 100 and dist < shortest then
                     closestSeat = seat
                     shortest = dist
                 end
@@ -106,7 +110,7 @@ task.spawn(function()
         end
     end
 
-    -- Do item collect/drop logic ONCE (not a loop)
+    -- Do item collect/drop logic ONCE
     local sackTool = LocalPlayer.Backpack:FindFirstChild("Sack")
     if sackTool then
         hum:EquipTool(sackTool)
@@ -167,10 +171,33 @@ task.spawn(function()
 
     wait(3)
 
-    -- TP to generator ONCE, then idle
+    -- REPLACE TP WITH PROXIMITY PROMPT SECTION
     hrp.CFrame = targetCFrame
+    wait(2)
+    local POSITION = hrp.Position
+    local nearestPrompt, nearestDist = nil, math.huge
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("ProximityPrompt") and part.Enabled then
+            local parent = part.Parent
+            if parent and parent:IsA("BasePart") then
+                local dist = (parent.Position - POSITION).Magnitude
+                if dist < nearestDist then
+                    nearestPrompt = part
+                    nearestDist = dist
+                end
+            end
+        end
+    end
+    if nearestPrompt then
+        for i = 1, 3 do
+            fireproximityprompt(nearestPrompt)
+            task.wait(0.2)
+        end
+        print("Fired prompt '" .. nearestPrompt.Name .. "' 3 times.")
+    else
+        warn("No enabled ProximityPrompt found near the teleport location.")
+    end
 
-    -- Idle forever, do nothing else
     while true do wait() end
 end)
 
