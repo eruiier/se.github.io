@@ -21,7 +21,7 @@ local function enableNoclip()
         end
     end)
 end
--- enableNoclip() -- uncomment if you want noclip enabled
+-- enableNoclip() -- Uncomment to enable noclip
 
 if not character.PrimaryPart then
     character.PrimaryPart = hrp
@@ -80,10 +80,18 @@ task.spawn(function()
     local chosenSeat = nil
 
     while true do
+        -- Always teleport to the generator before attempting to sit
+        hrp.CFrame = targetCFrame
+        wait(1.1)
+
         -- Only sit if not already seated or if you got unseated
         if not alreadySat or hum.SeatPart == nil then
             chosenSeat = nil
             while not chosenSeat do
+                -- Teleport again just before sitting (for safety)
+                hrp.CFrame = targetCFrame
+                wait(0.2)
+
                 local seat = findNearestValidChair()
                 if seat then
                     local s = sitOnSeat(seat)
@@ -155,6 +163,7 @@ task.spawn(function()
             wait(0.2)
         end
 
+        -- Teleport back to the generator after dropping (optional)
         hrp.CFrame = targetCFrame
         wait(1.1)
         wait(5)
