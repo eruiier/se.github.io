@@ -21,7 +21,10 @@ local function enableNoclip()
         end
     end)
 end
--- enableNoclip() -- Uncomment to enable noclip
+enableNoclip()
+LocalPlayer.CharacterAdded:Connect(function()
+    enableNoclip()
+end)
 
 if not character.PrimaryPart then
     character.PrimaryPart = hrp
@@ -182,7 +185,8 @@ task.spawn(function()
             wait(0.2)
         end
 
-        hrp.CFrame = targetCFrame
+        -- hrp.CFrame = targetCFrame -- REMOVED so you don't get stuck in a TP loop
+
         wait(3)
     end
 end)
