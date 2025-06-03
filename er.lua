@@ -205,7 +205,7 @@ local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 if experimentTable then
     local tpTarget = experimentTable.PrimaryPart or experimentTable:FindFirstChildWhichIsA("BasePart")
     if tpTarget then
-        hrp.CFrame = tpTarget.CFrame * CFrame.new(0, 12, 0)
+        hrp.CFrame = tpTarget.CFrame * CFrame.new(15, 12, 0)
     end
 end
 
