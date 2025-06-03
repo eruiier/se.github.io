@@ -319,11 +319,6 @@ if experimentTable then
 end
 
 
--- Load additional scripts
-task.spawn(function()
-    task.wait(1)
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
-end)
 
 task.spawn(function()
     task.wait(2)
