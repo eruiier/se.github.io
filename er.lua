@@ -323,7 +323,7 @@ task.wait(3)
 if experimentTable then
     local tpTarget = experimentTable.PrimaryPart or experimentTable:FindFirstChildWhichIsA("BasePart")
     if tpTarget then
-        HumanoidRootPart.CFrame = tpTarget.CFrame * CFrame.new(0, 12, 0)
+        HumanoidRootPart.CFrame = tpTarget.CFrame * CFrame.new(7, 12, 0)
     end
 end
 
