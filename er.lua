@@ -154,6 +154,11 @@ local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 end)
 
 
+hrp.CFrame = Workspace.TeslaLab.Generator.Generator.CFrame
+wait(1.1)
+wait(3)
+
+
 task.spawn(function()
     wait(1)
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
