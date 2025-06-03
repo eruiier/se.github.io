@@ -2,28 +2,21 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-
--- Flying handler names and connection references
 local velocityHandlerName = "VelocityHandler"
 local gyroHandlerName = "GyroHandler"
 local mfly1, mfly2
+local seatWeld
 
--- Disable flying function (triggered on jump)
 local function disableFlying()
     pcall(function()
         _G.FLYING = false
         local root = HumanoidRootPart
-        if root:FindFirstChild(velocityHandlerName) then
-            root:FindFirstChild(velocityHandlerName):Destroy()
-        end
-        if root:FindFirstChild(gyroHandlerName) then
-            root:FindFirstChild(gyroHandlerName):Destroy()
-        end
+        if root:FindFirstChild(velocityHandlerName) then root:FindFirstChild(velocityHandlerName):Destroy() end
+        if root:FindFirstChild(gyroHandlerName) then root:FindFirstChild(gyroHandlerName):Destroy() end
         Humanoid.PlatformStand = false
         if mfly1 then mfly1:Disconnect() mfly1 = nil end
         if mfly2 then mfly2:Disconnect() mfly2 = nil end
@@ -33,9 +26,7 @@ end
 task.spawn(function()
     while true do
         for _, part in ipairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
         task.wait(0.1)
     end
@@ -47,28 +38,16 @@ Player.CharacterAdded:Connect(function()
     task.wait(0.2)
     while true do
         for _, part in ipairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
         task.wait(0.1)
     end
 end)
 
 if not Character.PrimaryPart then Character.PrimaryPart = HumanoidRootPart end
-
 local originalWalkSpeed, originalJumpPower = Humanoid.WalkSpeed, Humanoid.JumpPower
 Humanoid.WalkSpeed = 0
 
-
-
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local HumanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local Humanoid = character:WaitForChild("Humanoid")
-
--- GEN TELEPORT CODE (first thing)
 local Generator = Workspace:WaitForChild("TeslaLab"):WaitForChild("Generator")
 local generatorCFrame = Generator:GetPivot()
 local modelPosition = generatorCFrame.Position
@@ -76,7 +55,6 @@ HumanoidRootPart.CFrame = CFrame.new(modelPosition + Vector3.new(0, 5, 0))
 HumanoidRootPart.Anchored = true
 task.wait(2)
 
--- Helper to get sorted available seats
 local function getAvailableSeatsSorted()
     local RuntimeItems = Workspace:WaitForChild("RuntimeItems")
     local pos = HumanoidRootPart.Position
@@ -99,22 +77,19 @@ local function sitOnNthClosestChair(n)
     local seatData = seats[n]
     if not seatData then return false end
     local seat = seatData.seat
+    if seatWeld then seatWeld:Destroy() seatWeld = nil end
     HumanoidRootPart.Anchored = true
     HumanoidRootPart.CFrame = seat.CFrame + Vector3.new(0, 3, 0)
-    task.delay(0.1, function()
-        if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
-    end)
-    task.delay(0.15, function()
-        if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
-    end)
+    task.delay(0.1, function() if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end end)
+    task.delay(0.15, function() if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end end)
     task.wait(0.5)
-    if Humanoid.Sit then Humanoid.Sit = false end -- Make sure not sitting
+    if Humanoid.Sit then Humanoid.Sit = false end
     seat:Sit(Humanoid)
-    local weld = Instance.new("WeldConstraint")
-    weld.Name = "PersistentSeatWeld"
-    weld.Part0 = HumanoidRootPart
-    weld.Part1 = seat
-    weld.Parent = HumanoidRootPart
+    seatWeld = Instance.new("WeldConstraint")
+    seatWeld.Name = "PersistentSeatWeld"
+    seatWeld.Part0 = HumanoidRootPart
+    seatWeld.Part1 = seat
+    seatWeld.Parent = HumanoidRootPart
     local chairModel = seat.Parent
     for _, part in ipairs(chairModel:GetDescendants()) do
         if part:IsA("BasePart") then part.CanCollide = false end
@@ -122,17 +97,15 @@ local function sitOnNthClosestChair(n)
     return true
 end
 
--- Sit on the closest chair FIRST (after teleport)
 sitOnNthClosestChair(1)
 
--- Monitor for being stuck for up to 10 seconds, and if stuck, sit on 2nd closest chair (once)
 task.spawn(function()
     local startTime = tick()
     local retried = false
     while tick() - startTime < 10 and not retried do
         local startPos = HumanoidRootPart.Position
         local stuck = true
-        for i = 1, 30 do -- 3 seconds, check every 0.1s
+        for i = 1, 30 do
             task.wait(0.1)
             local curPos = HumanoidRootPart.Position
             if math.abs(curPos.X - startPos.X) > 0.01 or math.abs(curPos.Y - startPos.Y) > 0.01 then
@@ -144,18 +117,13 @@ task.spawn(function()
             retried = true
             HumanoidRootPart.Anchored = false
             if Humanoid.Sit then Humanoid.Sit = false end
-            Humanoid.Jump = true -- force a real jump
+            Humanoid.Jump = true
             task.wait(0.25)
-            sitOnNthClosestChair(2) -- sit on the 2nd closest available chair
+            sitOnNthClosestChair(2)
         end
     end
 end)
 
-
-
-
-
--- Enable hybrid flying
 local FLYING = true
 local flyingToTarget = false
 local targetFlyPosition = nil
@@ -223,30 +191,25 @@ local function flyTo(targetPos)
     targetFlyPosition = nil
 end
 
--- Start flying
 _G.FLYING = true
 enableHybridFlying()
 
--- On jump: remove weld, unseat, and disable flying
 Humanoid.Jumping:Connect(function()
     disableFlying()
     if seatWeld then seatWeld:Destroy() seatWeld = nil end
     if Humanoid.Sit then Humanoid.Sit = false end
 end)
 
--- Restore walk/jump after a brief delay
 task.wait(1)
 Humanoid.WalkSpeed = originalWalkSpeed
 Humanoid.JumpPower = originalJumpPower
 
--- Equip Sack tool
 local sackTool = Player.Backpack:FindFirstChild("Sack")
 if sackTool then
     Humanoid:EquipTool(sackTool)
     task.wait(0.5)
 end
 
--- Collect werewolf parts: FLY TO EACH PART!
 local itemsToCollect = {
     Workspace.RuntimeItems:FindFirstChild("LeftWerewolfArm"),
     Workspace.RuntimeItems:FindFirstChild("LeftWerewolfLeg"),
@@ -328,9 +291,6 @@ if experimentTable and placedPartsFolder then
     end
 end
 
-
-
--- Continue to generator and activate prompts
 task.wait(1)
 HumanoidRootPart.CFrame = generatorCFrame * CFrame.new(0, 4, 0)
 task.wait(2)
@@ -353,12 +313,9 @@ if nearestPrompt then
         fireproximityprompt(nearestPrompt)
         task.wait(0.2)
     end
-else
-    warn("No enabled ProximityPrompt found near the teleport location.")
 end
 
 task.wait(3)
-
 if experimentTable then
     local tpTarget = experimentTable.PrimaryPart or experimentTable:FindFirstChildWhichIsA("BasePart")
     if tpTarget then
@@ -366,13 +323,10 @@ if experimentTable then
     end
 end
 
-
-
 task.spawn(function()
     task.wait(2)
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
 end)
-
 
 task.spawn(function()
     task.wait(30)
@@ -384,12 +338,8 @@ task.spawn(function()
     if ShovelTool and Humanoid then
         Humanoid:EquipTool(ShovelTool)
         task.wait(0.5)
-    else
-        warn("Shovel not found in backpack or Humanoid missing!")
     end
 end)
-
-
 
 task.spawn(function()
     local Players = game:GetService("Players")
@@ -397,11 +347,9 @@ task.spawn(function()
     local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
     local Player = Players.LocalPlayer
     local lastHad = false
-
     while true do
         local item = workspace.RuntimeItems:FindFirstChild("Electrocutioner")
         if item then
-            -- Try to pick up
             local character = Player.Character or Player.CharacterAdded:Wait()
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             if humanoidRootPart and item:IsA("BasePart") then
@@ -412,7 +360,6 @@ task.spawn(function()
             remote:FireServer(item)
             lastHad = true
         else
-            -- If we had it last frame but now it's gone, teleport up
             if lastHad then
                 local character = Player.Character or Player.CharacterAdded:Wait()
                 local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -425,6 +372,5 @@ task.spawn(function()
         wait(0.6)
     end
 end)
-
 
 while true do task.wait() end
