@@ -318,7 +318,6 @@ if experimentTable then
     end
 end
 
-while true do task.wait() end
 
 -- Load additional scripts
 task.spawn(function()
@@ -331,14 +330,18 @@ task.spawn(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
 end)
 
+
 task.spawn(function()
-    local Backpack = Player:WaitForChild("Backpack")
+    task.wait(30)
+    local Players = game:GetService("Players")
+    local Player = Players.LocalPlayer
     local Character = Player.Character or Player.CharacterAdded:Wait()
-    local Humanoid = Character:WaitForChild("Humanoid")
-    local shovel = Backpack:FindFirstChild("shovel")
-    if shovel then
-        Humanoid:EquipTool(shovel)
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    local ShovelTool = Player.Backpack:FindFirstChild("Shovel")
+    if ShovelTool and Humanoid then
+        Humanoid:EquipTool(ShovelTool)
+        task.wait(0.5)
     else
-        warn("No shovel found in your inventory!")
+        warn("Shovel not found in backpack or Humanoid missing!")
     end
 end)
