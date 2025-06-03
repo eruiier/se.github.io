@@ -172,7 +172,7 @@ task.spawn(function()
     wait(3)
 
     -- REPLACE TP WITH PROXIMITY PROMPT SECTION
-    hrp.CFrame = targetCFrame
+    hrp.CFrame = targetCFrame * CFrame.new(0, 4, 0)
     wait(2)
     local POSITION = hrp.Position
     local nearestPrompt, nearestDist = nil, math.huge
