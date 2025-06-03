@@ -244,33 +244,9 @@ for _, item in ipairs(itemsToCollect) do
 end
 
 
+-- Assemble parts on experiment table
 local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 local placedPartsFolder = experimentTable and experimentTable:FindFirstChild("PlacedParts")
-local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
-local pickupRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
-
-local function isOnGround(item)
-    return item and item.Parent == Workspace.RuntimeItems
-end
-
-local function spawnGroundWatcher(item)
-    task.spawn(function()
-        local totalWait = 0
-        while totalWait < 2 do
-            if not isOnGround(item) then
-                return
-            end
-            task.wait(0.1)
-            totalWait = totalWait + 0.1
-        end
-        if isOnGround(item) then
-            pickupRemote:FireServer(item)
-            task.wait(0.3)
-            dropRemote:FireServer()
-        end
-    end)
-end
-
 if experimentTable and placedPartsFolder then
     local dropTarget = experimentTable.PrimaryPart
     if not dropTarget then
@@ -285,13 +261,22 @@ if experimentTable and placedPartsFolder then
         local frontPos = dropTarget.Position + (dropTarget.CFrame.LookVector * 2) + Vector3.new(0, 5, 0)
         flyTo(frontPos)
         task.wait(0.5)
+        local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
+        local initialCount = #placedPartsFolder:GetChildren()
         for i = 1, #itemsToCollect do
-            local before = #placedPartsFolder:GetChildren()
-            dropRemote:FireServer()
-            task.wait(0.2)
-            for _, item in ipairs(itemsToCollect) do
-                if isOnGround(item) then
-                    spawnGroundWatcher(item)
+            local success = false
+            local attempts = 0
+            while not success and attempts < 5 do
+                dropRemote:FireServer()
+                task.wait(0.2)
+                local currentCount = #placedPartsFolder:GetChildren()
+                if currentCount > initialCount then
+                    success = true
+                    initialCount = currentCount
+                else
+                    flyTo(frontPos)
+                    task.wait(0.2)
+                    attempts = attempts + 1
                 end
             end
         end
