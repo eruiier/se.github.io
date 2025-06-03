@@ -1833,6 +1833,124 @@ checkBtn.MouseButton1Click:Connect(function()
 end)
 
 
+-- === AUTOBUY EGGS TAB ===
+
+local eggNames = {}
+for _, v in ipairs(workspace.NPCS["Pet Stand"].EggLocations:GetChildren()) do
+    table.insert(eggNames, v.Name)
+end
+
+local autobuyEggSelected = {}
+for _, egg in ipairs(eggNames) do autobuyEggSelected[egg] = false end
+
+local AutobuyEggTab = CreateTab("Autobuy Eggs")
+
+local EggLabel = Instance.new("TextLabel", AutobuyEggTab)
+EggLabel.Text = "Select eggs to autobuy:"
+EggLabel.Size = UDim2.new(1, -20, 0, 28)
+EggLabel.Position = UDim2.new(0, 10, 0, 6)
+EggLabel.BackgroundTransparency = 1
+EggLabel.TextColor3 = Theme.Text
+EggLabel.Font = Enum.Font.GothamBold
+EggLabel.TextSize = 16
+EggLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local EggScroll = Instance.new("ScrollingFrame", AutobuyEggTab)
+EggScroll.Size = UDim2.new(0.7, 0, 0, 170)
+EggScroll.Position = UDim2.new(0, 10, 0, 40)
+EggScroll.CanvasSize = UDim2.new(0, 0, 0, #eggNames * 30)
+EggScroll.BackgroundColor3 = Theme.Button
+EggScroll.ScrollBarThickness = 5
+EggScroll.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+EggScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UICorner", EggScroll).CornerRadius = UDim.new(0, 5)
+
+local egg_checkboxes = {}
+for i, egg in ipairs(eggNames) do
+    local cb = Instance.new("TextButton", EggScroll)
+    cb.Size = UDim2.new(1, -8, 0, 26)
+    cb.Position = UDim2.new(0, 4, 0, (i - 1) * 28)
+    cb.BackgroundColor3 = Theme.Button
+    cb.TextColor3 = Theme.Text
+    cb.Font = Enum.Font.Gotham
+    cb.TextSize = 15
+    cb.Text = "[  ] " .. egg
+    egg_checkboxes[egg] = cb
+
+    cb.MouseButton1Click:Connect(function()
+        autobuyEggSelected[egg] = not autobuyEggSelected[egg]
+        cb.Text = autobuyEggSelected[egg] and "[✔] " .. egg or "[  ] " .. egg
+        cb.BackgroundColor3 = autobuyEggSelected[egg] and Theme.Accent or Theme.Button
+    end)
+end
+
+local function get_autobuy_egg_list()
+    local t = {}
+    for _, egg in ipairs(eggNames) do
+        if autobuyEggSelected[egg] then table.insert(t, egg) end
+    end
+    return t
+end
+
+local autobuyEggRunning = false
+local autobuyEggThread
+
+local autobuy_egg_toggle = Instance.new("TextButton", AutobuyEggTab)
+autobuy_egg_toggle.Size = UDim2.new(0.28, 0, 0, 38)
+autobuy_egg_toggle.Position = UDim2.new(0.74, 0, 0, 40)
+autobuy_egg_toggle.BackgroundColor3 = Theme.Button
+autobuy_egg_toggle.TextColor3 = Theme.Text
+autobuy_egg_toggle.Font = Enum.Font.GothamBold
+autobuy_egg_toggle.TextSize = 17
+autobuy_egg_toggle.Text = "Start Autobuy"
+Instance.new("UICorner", autobuy_egg_toggle).CornerRadius = UDim.new(0, 7)
+
+autobuy_egg_toggle.MouseButton1Click:Connect(function()
+    if not autobuyEggRunning then
+        autobuyEggRunning = true
+        autobuy_egg_toggle.Text = "Stop Autobuy"
+        autobuy_egg_toggle.BackgroundColor3 = Theme.Accent2
+        -- Turn on global flag so your loop picks up
+        Autoegg_autoBuyEnabled = true
+        -- override the loop to only buy selected eggs
+        autobuyEggThread = task.spawn(function()
+            while autobuyEggRunning do
+                local list = get_autobuy_egg_list()
+                if #list > 0 then
+                    -- temporarily override Autoegg_eggLocations for your function
+                    local oldEggLocations = Autoegg_eggLocations:GetChildren()
+                    -- Buy each selected egg
+                    for _, eggName in ipairs(list) do
+                        local eggObj = Autoegg_eggLocations:FindFirstChild(eggName)
+                        if eggObj then
+                            local prompt = eggObj:FindFirstChildOfClass("ProximityPrompt") or eggObj:FindFirstChildWhichIsA("ProximityPrompt")
+                            if prompt then
+                                Autoegg_safeFirePrompt(prompt)
+                            end
+                            -- Optional: fire BuyPetEgg with index
+                            local idx = table.find(oldEggLocations, eggObj) or 1
+                            Autoegg_safeFireServer(idx)
+                        end
+                        task.wait(0.2)
+                    end
+                end
+                task.wait(0.7)
+            end
+        end)
+    else
+        autobuyEggRunning = false
+        autobuy_egg_toggle.Text = "Start Autobuy"
+        autobuy_egg_toggle.BackgroundColor3 = Theme.Button
+        Autoegg_autoBuyEnabled = false
+        if autobuyEggThread then
+            task.cancel(autobuyEggThread)
+            autobuyEggThread = nil
+        end
+    end
+end)
+
+
+
 -- === DRAGGABLE MAIN FRAME ===
 local dragging = false
 local dragStart, startPos, dragInput
