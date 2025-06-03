@@ -271,13 +271,13 @@ local function manualDrop(item)
     flyTo(pos)
     task.wait(0.3)
     dropRemote:FireServer()
-    task.wait(0.5)
+    task.wait(0.2)
 end
 
 local function watchAndRetry(item)
     -- Returns a thread you can wait on!
     return task.spawn(function()
-        local maxTries = 12
+        local maxTries = 8
         local tries = 0
         while tries < maxTries do
             tries = tries + 1
