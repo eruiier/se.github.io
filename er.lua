@@ -341,17 +341,19 @@ task.spawn(function()
     end
 end)
 
+
+
 task.spawn(function()
     local Players = game:GetService("Players")
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
     local Player = Players.LocalPlayer
-    local lastElectrocutionerExists = false
+    local lastHad = false
 
     while true do
         local item = workspace.RuntimeItems:FindFirstChild("Electrocutioner")
         if item then
-            lastElectrocutionerExists = true
+            -- Try to pick up
             local character = Player.Character or Player.CharacterAdded:Wait()
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             if humanoidRootPart and item:IsA("BasePart") then
@@ -360,18 +362,19 @@ task.spawn(function()
                 humanoidRootPart.CFrame = item.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
             end
             remote:FireServer(item)
+            lastHad = true
         else
-            if lastElectrocutionerExists then
-                -- It was present last check, but now it's gone (claimed)
+            -- If we had it last frame but now it's gone, teleport up
+            if lastHad then
                 local character = Player.Character or Player.CharacterAdded:Wait()
                 local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
                 if humanoidRootPart then
                     humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, 30, 0)
                 end
             end
-            lastElectrocutionerExists = false
+            lastHad = false
         end
-        wait(10)
+        wait(0.6)
     end
 end)
 
