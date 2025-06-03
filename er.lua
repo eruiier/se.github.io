@@ -149,15 +149,11 @@ task.spawn(function()
             wait(0.2)
         end
 
-        if seatWeld and seatWeld.Parent then
-            seatWeld:Destroy()
-        end
+        -- DO NOT destroy seatWeld or set hum.Sit = false. Remain seated and keep weld.
 
-        hum.Sit = false
-        wait(0.1)
         hrp.CFrame = targetCFrame
         wait(1.1)
-        wait(3)
+        wait(5)
         first = false
     end
 end)
