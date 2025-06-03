@@ -217,3 +217,27 @@ task.spawn(function()
     wait(1)
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
 end)
+
+
+task.spawn(function()
+    wait(2)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
+end)
+
+
+task.spawn(function()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Backpack = LocalPlayer:WaitForChild("Backpack")
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local Humanoid = Character:WaitForChild("Humanoid")
+
+    -- Find and equip the shovel
+    local shovel = Backpack:FindFirstChild("shovel")
+    if shovel then
+        Humanoid:EquipTool(shovel)
+        print("Equipped the shovel!")
+    else
+        warn("No shovel found in your inventory!")
+    end
+end)
