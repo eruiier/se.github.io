@@ -1,5 +1,4 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -49,7 +48,7 @@ local function findNearestValidChair()
     return closestSeat
 end
 
-local function sitAndWeldToSeat(seat)
+local function sitOnSeat(seat)
     hrp.CFrame = seat.CFrame * CFrame.new(0, 2, 0)
     wait(0.2)
     seat:Sit(hum)
@@ -57,12 +56,7 @@ local function sitAndWeldToSeat(seat)
         if hum.SeatPart == seat then break end
         wait(0.1)
     end
-    local weld = Instance.new("WeldConstraint")
-    weld.Name = "PersistentSeatWeld"
-    weld.Part0 = hrp
-    weld.Part1 = seat
-    weld.Parent = hrp
-    return seat, weld
+    return seat
 end
 
 task.spawn(function()
@@ -78,14 +72,13 @@ task.spawn(function()
             wait(1.1)
         end
 
-        local chosenSeat, seatWeld
+        local chosenSeat
         while not chosenSeat do
             local seat = findNearestValidChair()
             if seat then
-                local s, w = sitAndWeldToSeat(seat)
+                local s = sitOnSeat(seat)
                 if s then
                     chosenSeat = s
-                    seatWeld = w
                 end
             end
             wait(0.25)
@@ -149,11 +142,9 @@ task.spawn(function()
             wait(0.2)
         end
 
-        -- DO NOT destroy seatWeld or set hum.Sit = false. Remain seated and keep weld.
-
         hrp.CFrame = targetCFrame
         wait(1.1)
-        wait(5)
+        wait(3)
         first = false
     end
 end)
