@@ -144,7 +144,7 @@ task.spawn(function()
 
         hrp.CFrame = targetCFrame
         wait(1.1)
-        wait(3)
+        wait(5)
         first = false
     end
 end)
