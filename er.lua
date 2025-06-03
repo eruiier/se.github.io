@@ -253,6 +253,19 @@ local function isOnGround(item)
     return item and item.Parent == Workspace.RuntimeItems
 end
 
+local function spawnGroundWatcher(item)
+    task.spawn(function()
+        while isOnGround(item) do
+            task.wait(2)
+            if isOnGround(item) then
+                pickupRemote:FireServer(item)
+                task.wait(0.3)
+                dropRemote:FireServer()
+            end
+        end
+    end)
+end
+
 if experimentTable and placedPartsFolder then
     local dropTarget = experimentTable.PrimaryPart
     if not dropTarget then
@@ -267,33 +280,8 @@ if experimentTable and placedPartsFolder then
         local frontPos = dropTarget.Position + (dropTarget.CFrame.LookVector * 2) + Vector3.new(0, 5, 0)
         flyTo(frontPos)
         task.wait(0.5)
-        for i, item in ipairs(itemsToCollect) do
-            local success = false
-            local tries = 0
-            while not success and tries < 10 do
-                dropRemote:FireServer()
-                task.wait(0.25)
-                local currentCount = #placedPartsFolder:GetChildren()
-                if currentCount >= i then
-                    success = true
-                else
-                    if isOnGround(item) then
-                        task.wait(2)
-                        if isOnGround(item) then
-                            pickupRemote:FireServer(item)
-                            task.wait(0.25)
-                        end
-                    end
-                    flyTo(frontPos)
-                end
-                tries = tries + 1
-            end
-            if not success then
-                warn("Failed to assemble a part after multiple tries!")
-            end
-        end
-    end
-end
+        for _, item in ipairs(itemsToCollect) do
+            drop
 
 
 -- Continue to generator and activate prompts
