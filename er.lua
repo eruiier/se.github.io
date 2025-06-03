@@ -61,80 +61,78 @@ local originalWalkSpeed, originalJumpPower = Humanoid.WalkSpeed, Humanoid.JumpPo
 Humanoid.WalkSpeed = 0
 
 
+
+
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local HumanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local Humanoid = character:WaitForChild("Humanoid")
 
-local function teleportAndSit()
-    -- Teleport to Generator
-    local Generator = Workspace:WaitForChild("TeslaLab"):WaitForChild("Generator")
-    local generatorCFrame = Generator:GetPivot()
-    local modelPosition = generatorCFrame.Position
-    HumanoidRootPart.CFrame = CFrame.new(modelPosition + Vector3.new(0, 5, 0))
-    HumanoidRootPart.Anchored = true
-    task.wait(2)
+-- GEN TELEPORT CODE (first thing)
+local Generator = Workspace:WaitForChild("TeslaLab"):WaitForChild("Generator")
+local generatorCFrame = Generator:GetPivot()
+local modelPosition = generatorCFrame.Position
+HumanoidRootPart.CFrame = CFrame.new(modelPosition + Vector3.new(0, 5, 0))
+HumanoidRootPart.Anchored = true
+task.wait(2)
 
-    -- Find and sit on nearest chair
+-- Helper to get sorted available seats
+local function getAvailableSeatsSorted()
     local RuntimeItems = Workspace:WaitForChild("RuntimeItems")
-    local function findClosestSeat()
-        local closestSeat, minDist = nil, math.huge
-        local pos = HumanoidRootPart.Position
-        for _, chairModel in ipairs(RuntimeItems:GetChildren()) do
-            if chairModel:IsA("Model") and chairModel.Name == "Chair" then
-                local seat = chairModel:FindFirstChildOfClass("Seat")
-                if seat and seat.Occupant == nil then
-                    local d = (seat.Position - pos).Magnitude
-                    if d < minDist then
-                        minDist = d
-                        closestSeat = seat
-                    end
-                end
+    local pos = HumanoidRootPart.Position
+    local seats = {}
+    for _, chairModel in ipairs(RuntimeItems:GetChildren()) do
+        if chairModel:IsA("Model") and chairModel.Name == "Chair" then
+            local seat = chairModel:FindFirstChildOfClass("Seat")
+            if seat and seat.Occupant == nil then
+                local d = (seat.Position - pos).Magnitude
+                table.insert(seats, {seat = seat, dist = d})
             end
         end
-        return closestSeat
     end
-
-    local seat = findClosestSeat()
-    local seatWeld
-    if seat then
-        HumanoidRootPart.Anchored = true
-        HumanoidRootPart.CFrame = seat.CFrame + Vector3.new(0, 3, 0)
-        task.delay(0.1, function()
-            if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
-        end)
-        task.delay(0.15, function()
-            if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
-        end)
-        task.wait(0.5)
-        seat:Sit(Humanoid)
-        local weld = Instance.new("WeldConstraint")
-        weld.Name = "PersistentSeatWeld"
-        weld.Part0 = HumanoidRootPart
-        weld.Part1 = seat
-        weld.Parent = HumanoidRootPart
-        seatWeld = weld
-        local chairModel = seat.Parent
-        for _, part in ipairs(chairModel:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    else
-        HumanoidRootPart.Anchored = false
-        return
-    end
+    table.sort(seats, function(a, b) return a.dist < b.dist end)
+    return seats
 end
 
--- Initial teleport & sit
-teleportAndSit()
+local function sitOnNthClosestChair(n)
+    local seats = getAvailableSeatsSorted()
+    local seatData = seats[n]
+    if not seatData then return false end
+    local seat = seatData.seat
+    HumanoidRootPart.Anchored = true
+    HumanoidRootPart.CFrame = seat.CFrame + Vector3.new(0, 3, 0)
+    task.delay(0.1, function()
+        if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
+    end)
+    task.delay(0.15, function()
+        if HumanoidRootPart and HumanoidRootPart.Anchored then HumanoidRootPart.Anchored = false end
+    end)
+    task.wait(0.5)
+    seat:Sit(Humanoid)
+    local weld = Instance.new("WeldConstraint")
+    weld.Name = "PersistentSeatWeld"
+    weld.Part0 = HumanoidRootPart
+    weld.Part1 = seat
+    weld.Parent = HumanoidRootPart
+    local chairModel = seat.Parent
+    for _, part in ipairs(chairModel:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
+    end
+    return true
+end
 
--- Monitor for being stuck for up to 10 seconds after script starts
+-- Sit on the closest chair FIRST (after teleport)
+sitOnNthClosestChair(1)
+
+-- Monitor for being stuck for up to 10 seconds, and if stuck, sit on 2nd closest chair (once)
 task.spawn(function()
     local startTime = tick()
-    while tick() - startTime < 10 do
+    local retried = false
+    while tick() - startTime < 10 and not retried do
         local startPos = HumanoidRootPart.Position
         local stuck = true
-
         for i = 1, 30 do -- 3 seconds, check every 0.1s
             task.wait(0.1)
             local curPos = HumanoidRootPart.Position
@@ -143,13 +141,12 @@ task.spawn(function()
                 break
             end
         end
-
         if stuck then
+            retried = true
             Humanoid.Jump = true -- force jump
             task.wait(0.25)
-            teleportAndSit() -- try teleport & sit again
+            sitOnNthClosestChair(2) -- sit on the 2nd closest available chair
         end
-        -- If less than 10 seconds, keep monitoring, else auto-stop
     end
 end)
 
