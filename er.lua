@@ -165,8 +165,7 @@ task.spawn(function()
 
         -- Teleport back to the generator after dropping (optional)
         hrp.CFrame = targetCFrame
-        wait(1.1)
-        wait(5)
+        wait(3)
     end
 end)
 
