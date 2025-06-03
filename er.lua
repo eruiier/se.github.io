@@ -340,3 +340,6 @@ task.spawn(function()
         warn("Shovel not found in backpack or Humanoid missing!")
     end
 end)
+
+
+while true do task.wait() end
