@@ -198,6 +198,18 @@ task.spawn(function()
         warn("No enabled ProximityPrompt found near the teleport location.")
     end
 
+wait(3) -- Wait 3 seconds after firing prompt
+
+-- TP 12 blocks above experiment table
+local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
+if experimentTable then
+    local tpTarget = experimentTable.PrimaryPart or experimentTable:FindFirstChildWhichIsA("BasePart")
+    if tpTarget then
+        hrp.CFrame = tpTarget.CFrame * CFrame.new(0, 12, 0)
+    end
+end
+
+        
     while true do wait() end
 end)
 
