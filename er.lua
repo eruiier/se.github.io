@@ -7,13 +7,13 @@ local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local hum = character:WaitForChild("Humanoid")
 
-
 -- Function to enable noclip
+local noclipConnection
 local function enableNoclip()
     if noclipConnection then return end -- Prevent multiple connections
     noclipConnection = game:GetService("RunService").Stepped:Connect(function()
-        if player.Character then
-            for _, part in pairs(player.Character:GetDescendants()) do
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false -- Disable collisions
                 end
@@ -21,6 +21,7 @@ local function enableNoclip()
         end
     end)
 end
+-- enableNoclip() -- uncomment if you want noclip enabled
 
 if not character.PrimaryPart then
     character.PrimaryPart = hrp
@@ -75,30 +76,27 @@ local function sitOnSeat(seat)
 end
 
 task.spawn(function()
-    local first = true
+    local alreadySat = false
+    local chosenSeat = nil
+
     while true do
-        if first then
-            for i = 1, 2 do
-                hrp.CFrame = targetCFrame
-                wait(1.1)
-            end
-        else
-            hrp.CFrame = targetCFrame
-            wait(1.1)
-        end
-
-        local chosenSeat
-        while not chosenSeat do
-            local seat = findNearestValidChair()
-            if seat then
-                local s = sitOnSeat(seat)
-                if s then
-                    chosenSeat = s
+        -- Only sit if not already seated or if you got unseated
+        if not alreadySat or hum.SeatPart == nil then
+            chosenSeat = nil
+            while not chosenSeat do
+                local seat = findNearestValidChair()
+                if seat then
+                    local s = sitOnSeat(seat)
+                    if s then
+                        chosenSeat = s
+                        alreadySat = true
+                    end
                 end
+                wait(0.25)
             end
-            wait(0.25)
         end
 
+        -- Do item collect/drop logic here
         local sackTool = LocalPlayer.Backpack:FindFirstChild("Sack")
         if sackTool then
             hum:EquipTool(sackTool)
@@ -126,7 +124,7 @@ task.spawn(function()
                         end
                     end
                 end
-                if cframeTarget then
+                if cframeTarget and chosenSeat then
                     chosenSeat.CFrame = cframeTarget * CFrame.new(0, 2, 0)
                     wait(0.3)
                     storeRemote:FireServer(item)
@@ -136,7 +134,7 @@ task.spawn(function()
         end
 
         local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
-        if experimentTable then
+        if experimentTable and chosenSeat then
             local dropTarget = experimentTable.PrimaryPart
             if not dropTarget then
                 for _, p in pairs(experimentTable:GetDescendants()) do
@@ -160,7 +158,6 @@ task.spawn(function()
         hrp.CFrame = targetCFrame
         wait(1.1)
         wait(5)
-        first = false
     end
 end)
 
