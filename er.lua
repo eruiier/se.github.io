@@ -53,7 +53,7 @@ local function findNearestValidChair()
             local seat = item:FindFirstChildWhichIsA("Seat", true)
             if seat and not seat.Occupant then
                 local dist = (origin - seat.Position).Magnitude
-                if dist <= 300 and dist < shortest then
+                if dist <= 100 and dist < shortest then -- Only chairs really close to the generator!
                     closestSeat = seat
                     shortest = dist
                 end
@@ -79,19 +79,38 @@ task.spawn(function()
     local alreadySat = false
     local chosenSeat = nil
 
-    while true do
-        -- Always teleport to the generator before attempting to sit
+    -- PRE-TP and sit phase (the for loop you wanted restored)
+    for i = 1, 2 do
         hrp.CFrame = targetCFrame
         wait(1.1)
+    end
 
-        -- Only sit if not already seated or if you got unseated
-        if not alreadySat or hum.SeatPart == nil then
+    -- Sit-once logic, only if not already seated or unseated
+    if not alreadySat or hum.SeatPart == nil then
+        chosenSeat = nil
+        while not chosenSeat do
+            hrp.CFrame = targetCFrame
+            wait(0.2)
+            local seat = findNearestValidChair()
+            if seat then
+                local s = sitOnSeat(seat)
+                if s then
+                    chosenSeat = s
+                    alreadySat = true
+                end
+            end
+            wait(0.25)
+        end
+    end
+
+    while true do
+        -- If you ever get unseated, try to sit again (sit-once logic)
+        if hum.SeatPart == nil then
+            alreadySat = false
             chosenSeat = nil
             while not chosenSeat do
-                -- Teleport again just before sitting (for safety)
                 hrp.CFrame = targetCFrame
                 wait(0.2)
-
                 local seat = findNearestValidChair()
                 if seat then
                     local s = sitOnSeat(seat)
@@ -163,7 +182,6 @@ task.spawn(function()
             wait(0.2)
         end
 
-        -- Teleport back to the generator after dropping (optional)
         hrp.CFrame = targetCFrame
         wait(3)
     end
