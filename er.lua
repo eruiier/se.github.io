@@ -245,6 +245,7 @@ for _, item in ipairs(itemsToCollect) do
     end
 end
 
+
 local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 local placedPartsFolder = experimentTable and experimentTable:FindFirstChild("PlacedParts")
 local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
@@ -254,43 +255,69 @@ local function isOnGround(item)
     return item and item.Parent == Workspace.RuntimeItems
 end
 
+local function flyTo(pos)
+    HumanoidRootPart.CFrame = CFrame.new(pos)
+    task.wait(0.2)
+end
+
+local function getDropPosition(item)
+    -- Default: center above the table
+    local dropTarget = experimentTable.PrimaryPart or experimentTable:FindFirstChildWhichIsA("BasePart")
+    return dropTarget.Position + Vector3.new(0, 5, 0)
+end
+
+local function manualDrop(item)
+    local pos = getDropPosition(item)
+    flyTo(pos)
+    task.wait(0.3)
+    dropRemote:FireServer()
+    task.wait(0.5)
+end
+
 local function watchAndRetry(item)
-    task.spawn(function()
-        while isOnGround(item) do
-            task.wait(2)
-            if isOnGround(item) then
-                pickupRemote:FireServer(item)
-                task.wait(0.3)
-                dropRemote:FireServer()
+    -- Returns a thread you can wait on!
+    return task.spawn(function()
+        local maxTries = 12
+        local tries = 0
+        while tries < maxTries do
+            tries = tries + 1
+            if placedPartsFolder:FindFirstChild(item.Name) then
+                break
             end
+            if isOnGround(item) then
+                manualDrop(item)
+            end
+            task.wait(1)
         end
     end)
 end
 
 if experimentTable and placedPartsFolder then
-    local dropTarget = experimentTable.PrimaryPart
-    if not dropTarget then
-        for _, p in ipairs(experimentTable:GetDescendants()) do
-            if p:IsA("BasePart") then
-                dropTarget = p
+    local retryThreads = {}
+    for i, item in ipairs(itemsToCollect) do
+        manualDrop(item)
+        if isOnGround(item) then
+            table.insert(retryThreads, watchAndRetry(item))
+        end
+    end
+
+    -- Wait until all items are in PlacedParts or timeout
+    local timeout = 20
+    local t0 = tick()
+    while tick() - t0 < timeout do
+        local allPlaced = true
+        for _, item in ipairs(itemsToCollect) do
+            if not placedPartsFolder:FindFirstChild(item.Name) then
+                allPlaced = false
                 break
             end
         end
-    end
-    if dropTarget then
-        local frontPos = dropTarget.Position + (dropTarget.CFrame.LookVector * 2) + Vector3.new(0, 5, 0)
-        flyTo(frontPos)
-        task.wait(0.5)
-        for i, item in ipairs(itemsToCollect) do
-            dropRemote:FireServer()
-            task.wait(0.2)
-            if isOnGround(item) then
-                watchAndRetry(item)
-            end
-        end
+        if allPlaced then break end
+        task.wait(0.2)
     end
 end
 
+-- NOW safe to teleport to the generator and interact!
 task.wait(1)
 HumanoidRootPart.CFrame = generatorCFrame * CFrame.new(0, 4, 0)
 task.wait(2)
@@ -314,6 +341,8 @@ if nearestPrompt then
         task.wait(0.2)
     end
 end
+
+
 
 task.wait(3)
 if experimentTable then
