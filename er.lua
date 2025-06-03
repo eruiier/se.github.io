@@ -341,5 +341,34 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
+    local Player = Players.LocalPlayer
+
+    while true do
+        local item = workspace.RuntimeItems:FindFirstChild("Electrocutioner")
+        if item then
+            local character = Player.Character or Player.CharacterAdded:Wait()
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart and item:IsA("BasePart") then
+                humanoidRootPart.CFrame = item.CFrame + Vector3.new(0, 5, 0)
+            elseif humanoidRootPart and item.PrimaryPart then
+                humanoidRootPart.CFrame = item.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
+            end
+            remote:FireServer(item)
+            wait(0.6)
+        else
+            local character = Player.Character or Player.CharacterAdded:Wait()
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, 30, 0)
+            end
+            break
+        end
+    end
+end)
+
 
 while true do task.wait() end
