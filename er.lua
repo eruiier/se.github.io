@@ -7,6 +7,21 @@ local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 local hum = character:WaitForChild("Humanoid")
 
+
+-- Function to enable noclip
+local function enableNoclip()
+    if noclipConnection then return end -- Prevent multiple connections
+    noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+        if player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false -- Disable collisions
+                end
+            end
+        end
+    end)
+end
+
 if not character.PrimaryPart then
     character.PrimaryPart = hrp
 end
