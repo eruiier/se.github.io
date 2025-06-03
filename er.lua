@@ -287,7 +287,7 @@ local function watchAndRetry(item)
             if isOnGround(item) then
                 manualDrop(item)
             end
-            task.wait(1)
+            task.wait(0.5)
         end
     end)
 end
