@@ -346,10 +346,12 @@ task.spawn(function()
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
     local Player = Players.LocalPlayer
+    local lastElectrocutionerExists = false
 
     while true do
         local item = workspace.RuntimeItems:FindFirstChild("Electrocutioner")
         if item then
+            lastElectrocutionerExists = true
             local character = Player.Character or Player.CharacterAdded:Wait()
             local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
             if humanoidRootPart and item:IsA("BasePart") then
@@ -358,15 +360,18 @@ task.spawn(function()
                 humanoidRootPart.CFrame = item.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
             end
             remote:FireServer(item)
-            wait(0.6)
         else
-            local character = Player.Character or Player.CharacterAdded:Wait()
-            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, 30, 0)
+            if lastElectrocutionerExists then
+                -- It was present last check, but now it's gone (claimed)
+                local character = Player.Character or Player.CharacterAdded:Wait()
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    humanoidRootPart.CFrame = humanoidRootPart.CFrame + Vector3.new(0, 30, 0)
+                end
             end
-            break
+            lastElectrocutionerExists = false
         end
+        wait(10)
     end
 end)
 
