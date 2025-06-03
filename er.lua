@@ -244,9 +244,15 @@ for _, item in ipairs(itemsToCollect) do
 end
 
 
--- Assemble parts on experiment table
 local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 local placedPartsFolder = experimentTable and experimentTable:FindFirstChild("PlacedParts")
+local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
+local pickupRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tool"):WaitForChild("PickUpTool")
+
+local function isOnGround(item)
+    return item and item.Parent == Workspace.RuntimeItems
+end
+
 if experimentTable and placedPartsFolder then
     local dropTarget = experimentTable.PrimaryPart
     if not dropTarget then
@@ -261,23 +267,29 @@ if experimentTable and placedPartsFolder then
         local frontPos = dropTarget.Position + (dropTarget.CFrame.LookVector * 2) + Vector3.new(0, 5, 0)
         flyTo(frontPos)
         task.wait(0.5)
-        local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
-        local initialCount = #placedPartsFolder:GetChildren()
-        for i = 1, #itemsToCollect do
+        for i, item in ipairs(itemsToCollect) do
             local success = false
-            local attempts = 0
-            while not success and attempts < 5 do
+            local tries = 0
+            while not success and tries < 10 do
                 dropRemote:FireServer()
-                task.wait(0.2)
+                task.wait(0.25)
                 local currentCount = #placedPartsFolder:GetChildren()
-                if currentCount > initialCount then
+                if currentCount >= i then
                     success = true
-                    initialCount = currentCount
                 else
+                    if isOnGround(item) then
+                        task.wait(2)
+                        if isOnGround(item) then
+                            pickupRemote:FireServer(item)
+                            task.wait(0.25)
+                        end
+                    end
                     flyTo(frontPos)
-                    task.wait(0.2)
-                    attempts = attempts + 1
                 end
+                tries = tries + 1
+            end
+            if not success then
+                warn("Failed to assemble a part after multiple tries!")
             end
         end
     end
