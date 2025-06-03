@@ -302,7 +302,7 @@ if experimentTable and placedPartsFolder then
     end
 
     -- Wait until all items are in PlacedParts or timeout
-    local timeout = 20
+    local timeout = 10
     local t0 = tick()
     while tick() - t0 < timeout do
         local allPlaced = true
