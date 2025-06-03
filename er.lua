@@ -277,7 +277,7 @@ end
 local function watchAndRetry(item)
     -- Returns a thread you can wait on!
     return task.spawn(function()
-        local maxTries = 8
+        local maxTries = 7
         local tries = 0
         while tries < maxTries do
             tries = tries + 1
