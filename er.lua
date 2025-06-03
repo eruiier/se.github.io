@@ -243,7 +243,6 @@ for _, item in ipairs(itemsToCollect) do
     end
 end
 
-
 local experimentTable = Workspace.TeslaLab:FindFirstChild("ExperimentTable")
 local placedPartsFolder = experimentTable and experimentTable:FindFirstChild("PlacedParts")
 local dropRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DropItem")
@@ -253,7 +252,7 @@ local function isOnGround(item)
     return item and item.Parent == Workspace.RuntimeItems
 end
 
-local function spawnGroundWatcher(item)
+local function watchAndRetry(item)
     task.spawn(function()
         while isOnGround(item) do
             task.wait(2)
@@ -280,8 +279,16 @@ if experimentTable and placedPartsFolder then
         local frontPos = dropTarget.Position + (dropTarget.CFrame.LookVector * 2) + Vector3.new(0, 5, 0)
         flyTo(frontPos)
         task.wait(0.5)
-        for _, item in ipairs(itemsToCollect) do
-            drop
+        for i, item in ipairs(itemsToCollect) do
+            dropRemote:FireServer()
+            task.wait(0.2)
+            if isOnGround(item) then
+                watchAndRetry(item)
+            end
+        end
+    end
+end
+
 
 
 -- Continue to generator and activate prompts
