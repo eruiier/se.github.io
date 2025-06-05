@@ -98,7 +98,7 @@ local layout = Instance.new("UIListLayout", ButtonScroll)
 layout.Padding = UDim.new(0, 5)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local TAB_NAMES = {"Main", "Features", "Towns"}
+local TAB_NAMES = {"Main", "Features", "Other", "Towns"}
 local Tabs = {}
 
 -- Tab Buttons
@@ -135,33 +135,150 @@ local function CreateButton(parent, text, callback)
     return Button
 end
 
--- STATE for Features
-local noclipConnection, noclipOn
-local function enableNoclip(feedbackButton, offButton)
+--------------------------------
+-- STATE for Fly/Noclip/AntiVoid
+--------------------------------
+-- Noclip logic + buttons (in "Other" tab!)
+local noclipConnection = nil
+local function updateNoclipBtnColors(onBtn, offBtn, isOn)
+    if isOn then
+        onBtn.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
+        offBtn.BackgroundColor3 = Theme.Button
+    else
+        onBtn.BackgroundColor3 = Theme.Button
+        offBtn.BackgroundColor3 = Color3.fromRGB(205, 50, 50)
+    end
+end
+local function enableNoclip(onBtn, offBtn)
     if noclipConnection then return end
-    noclipOn = true
-    feedbackButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-    if offButton then offButton.BackgroundColor3 = Theme.Button end
+    updateNoclipBtnColors(onBtn, offBtn, true)
     noclipConnection = rs.Stepped:Connect(function()
-        if player.Character then
-            for _, part in pairs(player.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = false end
+        local char = player.Character
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
             end
         end
     end)
 end
-local function disableNoclip(onButton, feedbackButton)
-    if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
-    noclipOn = false
-    if onButton then onButton.BackgroundColor3 = Theme.Button end
-    feedbackButton.BackgroundColor3 = Color3.fromRGB(205, 50, 50)
-    if player.Character then
-        for _, part in pairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
+local function disableNoclip(onBtn, offBtn)
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    updateNoclipBtnColors(onBtn, offBtn, false)
+    local char = player.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
         end
     end
 end
 
+-- Fly logic + slider (in "Other" tab!)
+local flyActive = false
+local flyRSConn, flyBV, flyBG, flySpeed, flySlider, flySpeedText
+local function startFly(parent)
+    if flyActive then return end
+    flyActive = true
+    local LocalPlayer = player
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    flySpeed = 50
+    local velocityHandlerName = "VelocityHandler"
+    local gyroHandlerName = "GyroHandler"
+    local controlModule = require(LocalPlayer.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule"))
+    local root = HumanoidRootPart
+    local camera = workspace.CurrentCamera
+    local v3inf = Vector3.new(9e9, 9e9, 9e9)
+    flyBV = Instance.new("BodyVelocity")
+    flyBV.Name = velocityHandlerName
+    flyBV.Parent = root
+    flyBV.MaxForce = v3inf
+    flyBV.Velocity = Vector3.new()
+    flyBG = Instance.new("BodyGyro")
+    flyBG.Name = gyroHandlerName
+    flyBG.Parent = root
+    flyBG.MaxTorque = v3inf
+    flyBG.P = 1000
+    flyBG.D = 50
+    flyRSConn = rs.RenderStepped:Connect(function()
+        if not flyBV.Parent or not flyBG.Parent then
+            if flyRSConn then flyRSConn:Disconnect() end
+            return
+        end
+        flyBG.CFrame = camera.CFrame
+        local direction = controlModule:GetMoveVector()
+        flyBV.Velocity =
+            (camera.CFrame.RightVector * direction.X * flySpeed) +
+            (-camera.CFrame.LookVector * direction.Z * flySpeed)
+    end)
+    -- Slider UI (always visible at the top in Other tab)
+    if not flySlider then
+        flySlider = Instance.new("Frame", parent)
+        flySlider.Size = UDim2.new(0.93, 0, 0, 18)
+        flySlider.Position = UDim2.new(0.035, 0, 0, 0)
+        flySlider.BackgroundColor3 = Theme.Button
+        Instance.new("UICorner", flySlider).CornerRadius = UDim.new(0, 6)
+        local sliderBar = Instance.new("Frame", flySlider)
+        sliderBar.BackgroundColor3 = Color3.fromRGB(70,70,70)
+        sliderBar.Position = UDim2.new(0.07,0,0.5,-4)
+        sliderBar.Size = UDim2.new(0.86,0,0,8)
+        sliderBar.BorderSizePixel = 0
+        sliderBar.AnchorPoint = Vector2.new(0,0.5)
+        local sliderButton = Instance.new("TextButton", flySlider)
+        sliderButton.Size = UDim2.new(0, 18, 0, 18)
+        sliderButton.Position = UDim2.new((flySpeed-10)/990,0,0,0)
+        sliderButton.Text = ""
+        sliderButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
+        Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 9)
+        -- Text label to show the current fly speed, above the slider
+        flySpeedText = Instance.new("TextLabel", flySlider)
+        flySpeedText.Size = UDim2.new(1, 0, 0, 16)
+        flySpeedText.Position = UDim2.new(0, 0, 0, -18)
+        flySpeedText.Text = "Fly Speed: " .. flySpeed
+        flySpeedText.BackgroundTransparency = 1
+        flySpeedText.TextColor3 = Theme.Text
+        flySpeedText.Font = Enum.Font.GothamBold
+        flySpeedText.TextSize = 13
+        -- Drag logic
+        local dragging = false
+        sliderButton.MouseButton1Down:Connect(function(input)
+            dragging = true
+            local dragConn, endConn
+            dragConn = UIS.InputChanged:Connect(function(inputChanged)
+                if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) then
+                    local pos = inputChanged.Position.X - sliderBar.AbsolutePosition.X
+                    local scale = math.clamp(pos / sliderBar.AbsoluteSize.X, 0, 1)
+                    flySpeed = math.floor(scale * 990) + 10
+                    flySpeedText.Text = "Fly Speed: " .. flySpeed
+                    sliderButton.Position = UDim2.new(scale * 0.86,0,0,0)
+                end
+            end)
+            endConn = UIS.InputEnded:Connect(function(inputEnded)
+                if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                    if dragConn then dragConn:Disconnect() end
+                    if endConn then endConn:Disconnect() end
+                end
+            end)
+        end)
+    end
+end
+local function stopFly()
+    flyActive = false
+    if flyRSConn then flyRSConn:Disconnect() flyRSConn = nil end
+    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
+    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
+    if flySlider then pcall(function() flySlider:Destroy() end) flySlider = nil end
+    flySpeedText = nil
+end
+
+-- AntiVoid logic
 local antiVoidConnection, antiVoidActive
 local function startAntiVoid(button)
     if antiVoidConnection then return end
@@ -184,7 +301,9 @@ local function stopAntiVoid(button)
     button.BackgroundColor3 = Theme.Button
 end
 
--- Features
+-------------------
+-- Tab Definitions
+-------------------
 local tabDefinitions = {
     ["Main"] = {
         {label = "AUTO HIT OP", callback = function()
@@ -215,116 +334,40 @@ local tabDefinitions = {
             loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tpfort.github.io/refs/heads/main/Tpfort.lua"))()
         end},
     },
-    ["Features"] = function(parent)
-        CreateButton(parent, "GunKill Aura", function()
+    ["Features"] = {
+        {label = "GunKill Aura", callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWKILLAURA.github.io/refs/heads/main/NEWkill.lua"))()
+        end},
+        {label = "Collect All", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/collectall.github.io/refs/heads/main/ringta.lua"))()
+        end},
+        {label = "Auto Electrocutioner", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Electrocutioner.github.io/refs/heads/main/tesla.lua"))()
+        end},
+        {label = "TP to Trading Post", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
+        end},
+        {label = "Anti-Void: OFF", isSpecial = true, callback = function(selfBtn)
+            if antiVoidActive then stopAntiVoid(selfBtn)
+            else startAntiVoid(selfBtn) end
+        end},
+    },
+    ["Other"] = function(parent)
+        -- Fly controls at the top
+        local flyBtn = CreateButton(parent, "Fly: ON", function()
+            startFly(parent)
         end)
+        local flyOffBtn = CreateButton(parent, "Fly: OFF", function()
+            stopFly()
+        end)
+        -- Noclip controls
         local noclipOnBtn = CreateButton(parent, "Noclip: ON", function()
-            enableNoclip(noclipOnBtn, nil)
+            enableNoclip(noclipOnBtn, noclipOffBtn)
         end)
         local noclipOffBtn = CreateButton(parent, "Noclip: OFF", function()
             disableNoclip(noclipOnBtn, noclipOffBtn)
         end)
-        local antiVoidBtn = CreateButton(parent, "Anti-Void: OFF", function()
-            if antiVoidActive then stopAntiVoid(antiVoidBtn)
-            else startAntiVoid(antiVoidBtn) end
-        end)
-        -- FLY BUTTON with slider and speed text
-        CreateButton(parent, "Fly", function()
-            local Players = game:GetService("Players")
-            local RunService = game:GetService("RunService")
-            local UserInputService = game:GetService("UserInputService")
-            local Workspace = game:GetService("Workspace")
-            local LocalPlayer = Players.LocalPlayer
-            local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-            local flySpeed = 50
-            local velocityHandlerName = "VelocityHandler"
-            local gyroHandlerName = "GyroHandler"
-            local controlModule = require(LocalPlayer.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule"))
-            local root = HumanoidRootPart
-            local camera = Workspace.CurrentCamera
-            local v3inf = Vector3.new(9e9, 9e9, 9e9)
-            local bv = Instance.new("BodyVelocity")
-            bv.Name = velocityHandlerName
-            bv.Parent = root
-            bv.MaxForce = v3inf
-            bv.Velocity = Vector3.new()
-            local bg = Instance.new("BodyGyro")
-            bg.Name = gyroHandlerName
-            bg.Parent = root
-            bg.MaxTorque = v3inf
-            bg.P = 1000
-            bg.D = 50
-            local rsConn
-            rsConn = RunService.RenderStepped:Connect(function()
-                if not bv.Parent or not bg.Parent then
-                    if rsConn then rsConn:Disconnect() end
-                    return
-                end
-                bg.CFrame = camera.CFrame
-                local direction = controlModule:GetMoveVector()
-                bv.Velocity =
-                    (camera.CFrame.RightVector * direction.X * flySpeed) +
-                    (-camera.CFrame.LookVector * direction.Z * flySpeed)
-            end)
-            -- slider UI
-            local slider = Instance.new("Frame", parent)
-            slider.Size = UDim2.new(0.8, 0, 0.13, 0)
-            slider.Position = UDim2.new(0.1, 0, 0.29, 0)
-            slider.BackgroundColor3 = Theme.Button
-            Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 6)
-            local sliderButton = Instance.new("TextButton", slider)
-            sliderButton.Size = UDim2.new(0.1, 0, 1, 0)
-            sliderButton.Position = UDim2.new(0, 0, 0.5, 0)
-            sliderButton.AnchorPoint = Vector2.new(0.5, 0.5)
-            sliderButton.Text = ""
-            sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 6)
-            -- Text label
-            local speedText = Instance.new("TextLabel", parent)
-            speedText.Size = UDim2.new(0.8, 0, 0.13, 0)
-            speedText.Position = UDim2.new(0.1, 0, 0.42, 0)
-            speedText.Text = "Fly Speed: " .. flySpeed
-            speedText.BackgroundTransparency = 1
-            speedText.TextColor3 = Theme.Text
-            speedText.Font = Enum.Font.GothamBold
-            speedText.TextSize = 13
-            -- Drag logic
-            local dragging = false
-            sliderButton.MouseButton1Down:Connect(function(input)
-                dragging = true
-                local dragConn, endConn
-                dragConn = UserInputService.InputChanged:Connect(function(inputChanged)
-                    if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) then
-                        local pos = inputChanged.Position.X - slider.AbsolutePosition.X
-                        local scale = math.clamp(pos / slider.AbsoluteSize.X, 0, 1)
-                        flySpeed = math.floor(scale * 990) + 10
-                        speedText.Text = "Fly Speed: " .. flySpeed
-                        sliderButton.Position = UDim2.new(scale, 0, 0.5, 0)
-                    end
-                end)
-                endConn = UserInputService.InputEnded:Connect(function(inputEnded)
-                    if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
-                        dragging = false
-                        if dragConn then dragConn:Disconnect() end
-                        if endConn then endConn:Disconnect() end
-                    end
-                end)
-            end)
-        end)
-        CreateButton(parent, "Fly Off", function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/un.github.io/refs/heads/main/ufly.lua"))()
-        end)
-        CreateButton(parent, "Collect All", function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/collectall.github.io/refs/heads/main/ringta.lua"))()
-        end)
-        CreateButton(parent, "Auto Electrocutioner", function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Electrocutioner.github.io/refs/heads/main/tesla.lua"))()
-        end)
-        CreateButton(parent, "TP to Trading Post", function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
-        end)
+        updateNoclipBtnColors(noclipOnBtn, noclipOffBtn, false)
     end,
     ["Towns"] = {
         {label = "Town 1", callback = function()
@@ -357,7 +400,14 @@ local function loadTab(tabName)
         def(ButtonScroll)
     else
         for _, buttonDef in ipairs(def) do
-            CreateButton(ButtonScroll, buttonDef.label, buttonDef.callback)
+            if buttonDef.isSpecial then
+                -- AntiVoid gets a reference to itself for color switching
+                local btn = CreateButton(ButtonScroll, buttonDef.label, function()
+                    buttonDef.callback(btn)
+                end)
+            else
+                CreateButton(ButtonScroll, buttonDef.label, buttonDef.callback)
+            end
         end
     end
 end
