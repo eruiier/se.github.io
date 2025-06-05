@@ -1,7 +1,6 @@
 local TweenService, UIS, rs = game:GetService("TweenService"), game:GetService("UserInputService"), game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
 
--- Theme
 local Theme = {
     Background = Color3.fromRGB(15, 15, 15),
     Button = Color3.fromRGB(30, 30, 30),
@@ -44,7 +43,6 @@ end
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 ScreenGui.Name = "RingtaUI"
 
--- MainFrame (for rainbow outline & minimize, but now not the parent of other frames)
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.Size = UDim2.new(0, 500, 0, 300)
 MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
@@ -53,7 +51,6 @@ MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- Rainbow border
 local frameOutline = Instance.new("UIStroke", MainFrame)
 frameOutline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 frameOutline.Thickness = 3
@@ -63,7 +60,6 @@ rs.RenderStepped:Connect(function()
     frameOutline.Color = Color3.fromHSV(hue, 1, 1)
 end)
 
--- Title
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Text = "RINGTA SCRIPTS"
 Title.Size = UDim2.new(1, 0, 0, 32)
@@ -73,7 +69,6 @@ Title.TextColor3 = Theme.Text
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 20
 
--- TabsFrame (tab selector, DRAGGABLE)
 local TabsFrame = Instance.new("Frame", ScreenGui)
 TabsFrame.Size = UDim2.new(0, 110, 0, 220)
 TabsFrame.Position = UDim2.new(0.5, -250, 0.5, -110)
@@ -81,7 +76,6 @@ TabsFrame.BackgroundColor3 = Theme.Button
 Instance.new("UICorner", TabsFrame).CornerRadius = UDim.new(0, 8)
 makeDraggable(TabsFrame)
 
--- TabContentFrame (content area, DRAGGABLE, contains a ScrollingFrame)
 local TabContentFrame = Instance.new("Frame", ScreenGui)
 TabContentFrame.Size = UDim2.new(0, 340, 0, 220)
 TabContentFrame.Position = UDim2.new(0.5, -120, 0.5, -110)
@@ -89,7 +83,6 @@ TabContentFrame.BackgroundColor3 = Theme.Background
 Instance.new("UICorner", TabContentFrame).CornerRadius = UDim.new(0, 8)
 makeDraggable(TabContentFrame)
 
--- ScrollingFrame for buttons
 local ButtonScroll = Instance.new("ScrollingFrame", TabContentFrame)
 ButtonScroll.Size = UDim2.new(1, 0, 1, 0)
 ButtonScroll.Position = UDim2.new(0, 0, 0, 0)
@@ -100,12 +93,10 @@ ButtonScroll.ScrollBarThickness = 6
 ButtonScroll.ClipsDescendants = true
 ButtonScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
--- Tabs
-local TAB_NAMES = {"Main", "Features", "Other"}
+local TAB_NAMES = {"Main", "Features", "Other", "Towns"}
 local currentTab = "Main"
 local Tabs = {}
 
--- Tab Buttons
 for i, tabName in ipairs(TAB_NAMES) do
     local TabButton = Instance.new("TextButton", TabsFrame)
     TabButton.Text = tabName
@@ -125,7 +116,6 @@ for i, tabName in ipairs(TAB_NAMES) do
             end
         end
         TabButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-        -- Refresh Buttons
         for _, child in pairs(ButtonScroll:GetChildren()) do
             if not child:IsA("UIListLayout") then child:Destroy() end
         end
@@ -141,7 +131,6 @@ local layout = Instance.new("UIListLayout", ButtonScroll)
 layout.Padding = UDim.new(0, 6)
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Button Template
 local function CreateButton(parent, text, callback)
     local Button = Instance.new("TextButton", parent)
     Button.Text = text
@@ -161,7 +150,6 @@ local function CreateButton(parent, text, callback)
     return Button
 end
 
--- Tab Contents: Define per tab
 local tabDefinitions = {
     Main = {
         {label = "Teleport 1", callback = function()
@@ -188,17 +176,12 @@ local tabDefinitions = {
         {label = "TP to Bank", callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tptobank.github.io/refs/heads/main/Banktp.lua"))()
         end},
-        {label = "Town 1", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown1.github.io/refs/heads/main/town1.lua"))()
-        end},
-        -- Add more as needed...
     },
     Features = {
         {label = "Gun Aura (Kill Mobs)", callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWKILLAURA.github.io/refs/heads/main/NEWkill.lua"))()
         end},
         {label = "Noclip: ON", callback = function()
-            -- Noclip logic (as in your original script)
             if _G.noclipConn then return end
             _G.noclipConn = rs.Stepped:Connect(function()
                 if player.Character then
@@ -272,6 +255,26 @@ local tabDefinitions = {
         {label = "Tp Trading Post", callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
         end},
+    },
+    Towns = {
+        {label = "Town 1", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown1.github.io/refs/heads/main/town1.lua"))()
+        end},
+        {label = "Town 2", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown2.github.io/refs/heads/main/town2.lua"))()
+        end},
+        {label = "Town 3", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown3.github.io/refs/heads/main/town3.lua"))()
+        end},
+        {label = "Town 4", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown4.github.io/refs/heads/main/town4.lua"))()
+        end},
+        {label = "Town 5", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown5.github.io/refs/heads/main/town5.lua"))()
+        end},
+        {label = "Town 6", callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown6.github.io/refs/heads/main/town6.lua"))()
+        end},
     }
 }
 
@@ -281,10 +284,8 @@ function loadTab(tabName)
     end
 end
 
--- Initialize with main tab
 loadTab("Main")
 
--- Minimize Button
 local MinimizeButton = Instance.new("TextButton", MainFrame)
 MinimizeButton.Text = "-"
 MinimizeButton.Size = UDim2.new(0, 32, 0, 32)
@@ -299,7 +300,6 @@ local ReopenButton = Instance.new("TextButton", ScreenGui)
 ReopenButton.Text = "Open RINGTA SCRIPTS"
 ReopenButton.Size = UDim2.new(0, 180, 0, 36)
 ReopenButton.Position = UDim2.new(0.5, -90, 0, 8)
-ReopenButton.AnchorPoint = Vector2.new(0,0)
 ReopenButton.BackgroundColor3, ReopenButton.TextColor3 = Theme.Button, Theme.Text
 ReopenButton.Font = Enum.Font.GothamBold
 ReopenButton.TextSize = 16
