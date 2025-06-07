@@ -7,75 +7,70 @@ local TweenService = game:GetService("TweenService")
 local x = 57
 local y = 3
 local startZ = 30000
-local endZ = 10000
-local stepZ = -1000 -- Covers more ground per iteration
-local duration = 1 -- Faster movement
+local endZ = -49000
+local stepZ = -1000 -- Increased step size to cover more ground per iteration
+local duration = 1 -- Reduced duration for faster movement
 
-local foundExcalibur = false
-local excaliburInstance = nil
+local maxDistance = 300 -- Only consider Ballista seats within this distance from StillwaterPrison
 
--- Tween along Z-axis
-for z = startZ, endZ, stepZ do
-    if foundExcalibur then break end
-
-    -- Tween to the next point
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-    local goal = {CFrame = CFrame.new(Vector3.new(x, y, z))}
-    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
-    tween:Play()
-    tween.Completed:Wait()
-
-    -- Search for Excalibur in workspace.RuntimeItems
-    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
-    if runtimeItems then
-        local excalibur = runtimeItems:FindFirstChild("Excalibur")
-        if excalibur then
-            foundExcalibur = true
-            excaliburInstance = excalibur
-            break
+-- Find StillwaterPrison's position
+local stillwater = workspace:FindFirstChild("StillwaterPrison")
+local prisonPos = nil
+if stillwater then
+    if stillwater:IsA("Model") then
+        if stillwater.PrimaryPart then
+            prisonPos = stillwater.PrimaryPart.Position
+        elseif stillwater.GetModelCFrame then
+            prisonPos = stillwater:GetModelCFrame().Position
+        elseif #stillwater:GetChildren() > 0 then
+            prisonPos = stillwater:GetChildren()[1].Position
         end
+    elseif stillwater.Position then
+        prisonPos = stillwater.Position
     end
 end
 
-if foundExcalibur and excaliburInstance then
-    -- Find the closest Ballista Turret (with VehicleSeat) to Excalibur
-    local closestTurret = nil
-    local closestSeat = nil
-    local minDist = math.huge
+local stopTweening = false
+local closestSeat = nil
+local minDist = math.huge
 
-    for _, item in pairs(workspace:GetDescendants()) do
-        if item:IsA("Model") and item.Name == "Ballista Turret" then
-            local vehicleSeat = item:FindFirstChild("VehicleSeat")
-            if vehicleSeat and vehicleSeat:IsA("Seat") then
-                local dist = (vehicleSeat.Position - excaliburInstance.Position).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    closestTurret = item
-                    closestSeat = vehicleSeat
+for z = startZ, endZ, stepZ do
+    if stopTweening then break end
+
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    local goal = {CFrame = CFrame.new(Vector3.new(x, y, z))}
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+
+    tween:Play()
+    tween.Completed:Wait()
+
+    -- If we have a prison position, look for the closest Ballista seat within maxDistance
+    if prisonPos then
+        for _, item in pairs(workspace:GetDescendants()) do
+            if item:IsA("Model") and item.Name == "Ballista" then
+                local vehicleSeat = item:FindFirstChild("VehicleSeat")
+                if vehicleSeat and vehicleSeat:IsA("Seat") then
+                    local dist = (vehicleSeat.Position - prisonPos).Magnitude
+                    if dist < minDist and dist <= maxDistance then
+                        minDist = dist
+                        closestSeat = vehicleSeat
+                    end
                 end
             end
         end
     end
 
-    if closestTurret and closestSeat then
-        -- Tween to a position next to the closest Ballista Turret's seat
-        local seatCFrame = closestSeat.CFrame
-        local offset = seatCFrame.LookVector * -3 -- 3 studs behind the seat
-        local targetCFrame = seatCFrame + offset
-
-        local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        local goal = {CFrame = targetCFrame}
-        local finalTween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
-        finalTween:Play()
-        finalTween.Completed:Wait()
-
-        -- Uncomment the following line to actually sit on the seat
-        -- closestSeat:Sit(humanoid)
-
-        print("Arrived next to the closest Ballista Turret to Excalibur!")
-    else
-        warn("Excalibur found, but no Ballista Turret with a seat nearby.")
+    if closestSeat then
+        -- Move to the seat and sit
+        character:PivotTo(closestSeat.CFrame)
+        closestSeat:Sit(humanoid)
+        stopTweening = true
+        break
     end
+end
+
+if not stopTweening then
+    warn("No Ballista with a seat found within 300 studs of StillwaterPrison along the specified Z range.")
 else
-    warn("Excalibur not found along the specified Z range.")
+    print("Stopped after finding and sitting on the Ballista seat.")
 end
