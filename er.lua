@@ -9,8 +9,7 @@ local y = 3
 local startZ = 30000
 local endZ = -49000
 local stepZ = -1000
-local duration = 0.5
-local maxDistance = 300
+local duration = 1
 
 local function getPrisonPos(stillwater)
     if stillwater:IsA("Model") then
@@ -32,8 +31,6 @@ for z = startZ, endZ, stepZ do
     if stopped then break end
 
     local pos = Vector3.new(x, y, z)
-
-    -- Tween instead of teleport
     local tween = TweenService:Create(
         humanoidRootPart,
         TweenInfo.new(duration, Enum.EasingStyle.Linear),
@@ -46,29 +43,17 @@ for z = startZ, endZ, stepZ do
     if stillwater then
         local prisonPos = getPrisonPos(stillwater)
         if prisonPos then
-            -- Find closest Ballista to the prison
-            local closestBallista, minDist = nil, math.huge
-            for _, item in pairs(workspace:GetDescendants()) do
-                if item:IsA("Model") and item.Name == "Ballista" then
-                    local root = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
-                    if root then
-                        local dist = (root.Position - prisonPos).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            closestBallista = item
-                        end
-                    end
-                end
-            end
-            if closestBallista then
-                local seat = closestBallista:FindFirstChild("VehicleSeat") or closestBallista:FindFirstChildWhichIsA("VehicleSeat")
+            -- Find Ballista inside StillwaterPrison ONLY
+            local ballista = stillwater:FindFirstChild("Ballista", true)
+            if ballista then
+                local seat = ballista:FindFirstChild("VehicleSeat", true)
                 if seat then
                     for i = 1, 100 do
-                        humanoidRootPart.CFrame = CFrame.new(prisonPos) -- Teleport to prison for sit attempts
+                        humanoidRootPart.CFrame = CFrame.new(prisonPos)
                         seat:Sit(humanoid)
                         task.wait(0.1)
                         if humanoid.SeatPart == seat then
-                            print("Sat on the Ballista seat after " .. i .. " attempts. Script stopping.")
+                            print("Sat on the Ballista seat inside StillwaterPrison after " .. i .. " attempts. Script stopping.")
                             stopped = true
                             break
                         end
@@ -79,12 +64,12 @@ for z = startZ, endZ, stepZ do
                         break
                     end
                 else
-                    print("Found Ballista but no VehicleSeat in it.")
+                    print("Ballista inside StillwaterPrison has no VehicleSeat.")
                     stopped = true
                     break
                 end
             else
-                print("StillwaterPrison found, but no Ballista nearby.")
+                print("No Ballista found inside StillwaterPrison.")
                 stopped = true
                 break
             end
