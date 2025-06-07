@@ -11,7 +11,7 @@ local endZ = -49000
 local stepZ = -1000 -- Increased step size to cover more ground per iteration
 local duration = 1 -- Reduced duration for faster movement
 
-local maxDistance = 300 -- Only consider Ballista seats within this distance from StillwaterPrison
+local maxDistance = 500 -- Only consider Ballista seats within this distance from StillwaterPrison
 
 -- Find StillwaterPrison's position
 local stillwater = workspace:FindFirstChild("StillwaterPrison")
