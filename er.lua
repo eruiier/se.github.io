@@ -1834,12 +1834,31 @@ end)
 -- === AUTOBUY EGGS TAB ===
 
 local eggOptions = {
-    {label = "Common Egg",    getPrompt = function() local o = Autoegg_eggLocations:FindFirstChild("Common Egg"); return o and o:FindFirstChild("ProximityPrompt") end, id = 1},
-    {label = "Egg 5",         getPrompt = function() local o = Autoegg_eggLocations:GetChildren()[5]; return o and o:FindFirstChild("ProximityPrompt") end, id = 2},
-    {label = "Egg 6",         getPrompt = function() local o = Autoegg_eggLocations:GetChildren()[6]; return o and o:FindFirstChild("ProximityPrompt") end, id = 3},
+    "Common Egg",
+    "Uncommon Egg",
+    "Rare Egg",
+    "Legendary Egg",
+    "Mythical Egg",
+    "Bug Egg",
+    "Exotic Bug Egg"
 }
 
-local selectedEggs = {false, false, false}
+-- The order here must match the required index for BuyPetEgg!
+local orderedEggs = {
+    "Uncommon Egg",    -- 1
+    "Rare Egg",        -- 2
+    "Common Egg",      -- 3
+    "Legendary Egg",   -- 4
+    "Mythical Egg",    -- 5
+    "Bug Egg",         -- 6
+    "Exotic Bug Egg",  -- 7
+}
+
+local selectedEggs = {}
+for _, egg in ipairs(eggOptions) do
+    selectedEggs[egg] = false
+end
+
 local AutobuyEggTab = CreateTab("Autobuy Eggs")
 
 local EggLabel = Instance.new("TextLabel", AutobuyEggTab)
@@ -1871,13 +1890,13 @@ for i, egg in ipairs(eggOptions) do
     cb.TextColor3 = Theme.Text
     cb.Font = Enum.Font.Gotham
     cb.TextSize = 15
-    cb.Text = "[  ] " .. egg.label
-    egg_checkboxes[i] = cb
+    cb.Text = "[  ] " .. egg
+    egg_checkboxes[egg] = cb
 
     cb.MouseButton1Click:Connect(function()
-        selectedEggs[i] = not selectedEggs[i]
-        cb.Text = selectedEggs[i] and "[✔] " .. egg.label or "[  ] " .. egg.label
-        cb.BackgroundColor3 = selectedEggs[i] and Theme.Accent or Theme.Button
+        selectedEggs[egg] = not selectedEggs[egg]
+        cb.Text = selectedEggs[egg] and "[✔] " .. egg or "[  ] " .. egg
+        cb.BackgroundColor3 = selectedEggs[egg] and Theme.Accent or Theme.Button
     end)
 end
 
@@ -1901,19 +1920,20 @@ autobuy_egg_toggle.MouseButton1Click:Connect(function()
         autobuy_egg_toggle.BackgroundColor3 = Theme.Accent2
         autobuyEggThread = task.spawn(function()
             while autobuyEggRunning do
-                for i, sel in ipairs(selectedEggs) do
-                    if sel then
-                        local egg = eggOptions[i]
-                        local prompt = egg.getPrompt()
-                        if prompt then
-                            Autoegg_safeFirePrompt(prompt)
-                            task.wait(0.3)
+                for _, eggName in ipairs(eggOptions) do
+                    if selectedEggs[eggName] then
+                        for index, name in ipairs(orderedEggs) do
+                            if eggName == name then
+                                game:GetService("ReplicatedStorage")
+                                    :WaitForChild("GameEvents")
+                                    :WaitForChild("BuyPetEgg")
+                                    :FireServer(index)
+                                break
+                            end
                         end
-                        Autoegg_safeFireServer(egg.id)
-                        task.wait(0.2)
                     end
                 end
-                task.wait(0.7)
+                task.wait(0.1)
             end
         end)
     else
@@ -1926,6 +1946,7 @@ autobuy_egg_toggle.MouseButton1Click:Connect(function()
         end
     end
 end)
+
 
 
 
