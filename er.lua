@@ -1,89 +1,58 @@
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
-local x = 57
-local y = 3
-local startZ = 30000
-local endZ = -49000
-local stepZ = -1000
-local duration = 1
-local maxDistance = 300
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
-local function getPrisonPos(stillwater)
-    if stillwater:IsA("Model") then
-        if stillwater.PrimaryPart then
-            return stillwater.PrimaryPart.Position
-        elseif stillwater.GetModelCFrame then
-            return stillwater:GetModelCFrame().Position
-        elseif #stillwater:GetChildren() > 0 then
-            return stillwater:GetChildren()[1].Position
-        end
-    elseif stillwater.Position then
-        return stillwater.Position
+-- Disable collisions for all character parts
+RunService.Stepped:Connect(function()
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = false end
     end
-    return nil
-end
+end)
 
-local stopped = false
-for z = startZ, endZ, stepZ do
-    if stopped then break end
+local foundSeat = false
 
-    local pos = Vector3.new(x, y, z)
-    character:PivotTo(CFrame.new(pos))
-    task.wait(duration)
+for z = 30000, -49032.99, -2000 do
+    if foundSeat then break end
+    print("Tweening to Z:", z)
+    local tween = TweenService:Create(rootPart, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {CFrame = CFrame.new(57, 3, z)})
+
+    if tween then
+        tween:Play()
+        tween.Completed:Wait()
+    else
+        warn("Tween failed to create. Check TweenService parameters.")
+        break
+    end
 
     local stillwater = workspace:FindFirstChild("StillwaterPrison")
     if stillwater then
-        local prisonPos = getPrisonPos(stillwater)
-        if prisonPos then
-            -- Find closest Ballista to the prison
-            local closestBallista, minDist = nil, math.huge
-            for _, item in pairs(workspace:GetDescendants()) do
-                if item:IsA("Model") and item.Name == "Ballista" then
-                    local root = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
-                    if root then
-                        local dist = (root.Position - prisonPos).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            closestBallista = item
-                        end
-                    end
-                end
-            end
-            if closestBallista then
-                local seat = closestBallista:FindFirstChild("VehicleSeat") or closestBallista:FindFirstChildWhichIsA("VehicleSeat")
-                if seat then
-                    for i = 1, 100 do
-                        character:PivotTo(CFrame.new(prisonPos))
-                        seat:Sit(humanoid)
-                        task.wait(0.1)
-                        if humanoid.SeatPart == seat then
-                            print("Sat on the Ballista seat after " .. i .. " attempts. Script stopping.")
-                            stopped = true
-                            break
-                        end
-                    end
-                    if not stopped then
-                        print("Tried 100 times, but could not sit.")
-                        stopped = true
+        local ballista = stillwater:FindFirstChild("Ballista")
+        if ballista then
+            local vehicleSeat = ballista:FindFirstChild("VehicleSeat")
+            if vehicleSeat and vehicleSeat:IsA("Seat") then
+                -- Found the seat! Teleport and try to sit up to 100 times (0.1s apart), stopping if successful
+                for i = 1, 100 do
+                    rootPart.CFrame = vehicleSeat.CFrame
+                    vehicleSeat:Sit(character:WaitForChild("Humanoid"))
+                    task.wait(0.1)
+                    if character.Humanoid.SeatPart == vehicleSeat then
+                        print("Sat on the VehicleSeat after " .. i .. " attempts.")
+                        foundSeat = true
                         break
                     end
-                else
-                    print("Found Ballista but no VehicleSeat in it.")
-                    stopped = true
-                    break
                 end
-            else
-                print("StillwaterPrison found, but no Ballista nearby.")
-                stopped = true
+                if not foundSeat then
+                    print("Could not sit after 100 attempts.")
+                end
                 break
             end
         end
     end
 end
 
-if not stopped then
-    warn("No StillwaterPrison found along the specified Z range.")
+if not foundSeat then
+    warn("No VehicleSeat found in StillwaterPrison's Ballista or sitting failed.")
 end
