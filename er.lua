@@ -38,27 +38,27 @@ for z = startZ, endZ, stepZ do
 end
 
 if foundExcalibur and excaliburInstance then
-    -- Find the closest Cannon (with VehicleSeat) to Excalibur
-    local closestCannon = nil
+    -- Find the closest Ballista Turret (with VehicleSeat) to Excalibur
+    local closestTurret = nil
     local closestSeat = nil
     local minDist = math.huge
 
     for _, item in pairs(workspace:GetDescendants()) do
-        if item:IsA("Model") and item.Name == "Cannon" then
+        if item:IsA("Model") and item.Name == "Ballista Turret" then
             local vehicleSeat = item:FindFirstChild("VehicleSeat")
             if vehicleSeat and vehicleSeat:IsA("Seat") then
                 local dist = (vehicleSeat.Position - excaliburInstance.Position).Magnitude
                 if dist < minDist then
                     minDist = dist
-                    closestCannon = item
+                    closestTurret = item
                     closestSeat = vehicleSeat
                 end
             end
         end
     end
 
-    if closestCannon and closestSeat then
-        -- Tween to a position next to the closest cannon's seat
+    if closestTurret and closestSeat then
+        -- Tween to a position next to the closest Ballista Turret's seat
         local seatCFrame = closestSeat.CFrame
         local offset = seatCFrame.LookVector * -3 -- 3 studs behind the seat
         local targetCFrame = seatCFrame + offset
@@ -69,12 +69,12 @@ if foundExcalibur and excaliburInstance then
         finalTween:Play()
         finalTween.Completed:Wait()
 
-        -- Sit next to the seat (or on the seat if you want)
-        -- closestSeat:Sit(humanoid) -- Uncomment to actually sit
+        -- Uncomment the following line to actually sit on the seat
+        -- closestSeat:Sit(humanoid)
 
-        print("Arrived next to the closest cannon to Excalibur!")
+        print("Arrived next to the closest Ballista Turret to Excalibur!")
     else
-        warn("Excalibur found, but no cannon with a seat nearby.")
+        warn("Excalibur found, but no Ballista Turret with a seat nearby.")
     end
 else
     warn("Excalibur not found along the specified Z range.")
