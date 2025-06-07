@@ -9,7 +9,7 @@ local y = 3
 local startZ = 30000
 local endZ = -49000
 local stepZ = -1000 -- Increased step size to cover more ground per iteration
-local duration = 1 -- Reduced duration for faster movement
+local duration = 0.5 -- Reduced duration for faster movement
 
 local maxDistance = 500 -- Only consider Ballista seats within this distance from StillwaterPrison
 
