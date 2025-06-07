@@ -3,74 +3,87 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-local TweenService = game:GetService("TweenService")
 local x = 57
 local y = 3
 local startZ = 30000
 local endZ = -49000
-local stepZ = -1000 -- Increased step size to cover more ground per iteration
-local duration = 0.5 -- Reduced duration for faster movement
+local stepZ = -1000
+local duration = 1
+local maxDistance = 300
 
-local maxDistance = 500 -- Only consider Ballista seats within this distance from StillwaterPrison
-
--- Find StillwaterPrison's position
-local stillwater = workspace:FindFirstChild("StillwaterPrison")
-local prisonPos = nil
-if stillwater then
+local function getPrisonPos(stillwater)
     if stillwater:IsA("Model") then
         if stillwater.PrimaryPart then
-            prisonPos = stillwater.PrimaryPart.Position
+            return stillwater.PrimaryPart.Position
         elseif stillwater.GetModelCFrame then
-            prisonPos = stillwater:GetModelCFrame().Position
+            return stillwater:GetModelCFrame().Position
         elseif #stillwater:GetChildren() > 0 then
-            prisonPos = stillwater:GetChildren()[1].Position
+            return stillwater:GetChildren()[1].Position
         end
     elseif stillwater.Position then
-        prisonPos = stillwater.Position
+        return stillwater.Position
     end
+    return nil
 end
 
-local stopTweening = false
-local closestSeat = nil
-local minDist = math.huge
-
+local stopped = false
 for z = startZ, endZ, stepZ do
-    if stopTweening then break end
+    if stopped then break end
 
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-    local goal = {CFrame = CFrame.new(Vector3.new(x, y, z))}
-    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+    local pos = Vector3.new(x, y, z)
+    character:PivotTo(CFrame.new(pos))
+    task.wait(duration)
 
-    tween:Play()
-    tween.Completed:Wait()
-
-    -- If we have a prison position, look for the closest Ballista seat within maxDistance
-    if prisonPos then
-        for _, item in pairs(workspace:GetDescendants()) do
-            if item:IsA("Model") and item.Name == "Ballista" then
-                local vehicleSeat = item:FindFirstChild("VehicleSeat")
-                if vehicleSeat and vehicleSeat:IsA("Seat") then
-                    local dist = (vehicleSeat.Position - prisonPos).Magnitude
-                    if dist < minDist and dist <= maxDistance then
-                        minDist = dist
-                        closestSeat = vehicleSeat
+    local stillwater = workspace:FindFirstChild("StillwaterPrison")
+    if stillwater then
+        local prisonPos = getPrisonPos(stillwater)
+        if prisonPos then
+            -- Find closest Ballista to the prison
+            local closestBallista, minDist = nil, math.huge
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("Model") and item.Name == "Ballista" then
+                    local root = item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")
+                    if root then
+                        local dist = (root.Position - prisonPos).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            closestBallista = item
+                        end
                     end
                 end
             end
+            if closestBallista then
+                local seat = closestBallista:FindFirstChild("VehicleSeat") or closestBallista:FindFirstChildWhichIsA("VehicleSeat")
+                if seat then
+                    for i = 1, 100 do
+                        character:PivotTo(CFrame.new(prisonPos))
+                        seat:Sit(humanoid)
+                        task.wait(0.1)
+                        if humanoid.SeatPart == seat then
+                            print("Sat on the Ballista seat after " .. i .. " attempts. Script stopping.")
+                            stopped = true
+                            break
+                        end
+                    end
+                    if not stopped then
+                        print("Tried 100 times, but could not sit.")
+                        stopped = true
+                        break
+                    end
+                else
+                    print("Found Ballista but no VehicleSeat in it.")
+                    stopped = true
+                    break
+                end
+            else
+                print("StillwaterPrison found, but no Ballista nearby.")
+                stopped = true
+                break
+            end
         end
-    end
-
-    if closestSeat then
-        -- Move to the seat and sit
-        character:PivotTo(closestSeat.CFrame)
-        closestSeat:Sit(humanoid)
-        stopTweening = true
-        break
     end
 end
 
-if not stopTweening then
-    warn("No Ballista with a seat found within 300 studs of StillwaterPrison along the specified Z range.")
-else
-    print("Stopped after finding and sitting on the Ballista seat.")
+if not stopped then
+    warn("No StillwaterPrison found along the specified Z range.")
 end
