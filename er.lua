@@ -82,7 +82,6 @@ Instance.new("UICorner", TabContentFrame).CornerRadius = UDim.new(0, 6)
 -- SCROLLING TAB FUNCTION (COMPACT)
 local function CreateTab(tabName)
     local TabButton = Instance.new("TextButton", TabsFrame)
-    -- Tab buttons remain the same
     TabButton.Text, TabButton.Size, TabButton.Position = tabName, UDim2.new(1, -10, 0, 30), UDim2.new(0, 5, 0, (#Tabs * 35))
     TabButton.BackgroundColor3, TabButton.TextColor3 = Theme.Button, Theme.Text
     Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
@@ -95,8 +94,7 @@ local function CreateTab(tabName)
     TabFrame.BorderSizePixel = 0
     TabFrame.ScrollBarThickness = 6
     TabFrame.ClipsDescendants = true
-    -- CanvasSize should fit your expected number of buttons; increase if needed.
-    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 240) -- fits about 6 buttons with 30-40px increments
+    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 300) -- fits about 8-9 compact buttons, increase if needed
     TabFrame.Visible = (#Tabs == 0)
     Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0, 6)
     table.insert(Tabs, TabFrame)
@@ -308,6 +306,7 @@ CreateButton(BypassTab, "Tp Trading Post", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
 end, UDim2.new(0.1, 0, 0, 170))
 
+-- Features Tab for Features
 local FeaturesTab = CreateTab("Features")
 CreateButton(FeaturesTab, "Collect All", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/collectall.github.io/refs/heads/main/ringta.lua"))()
@@ -315,6 +314,7 @@ end, UDim2.new(0.1, 0, 0, 10))
 CreateButton(FeaturesTab, "Auto Electrocutioner", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Electrocutioner.github.io/refs/heads/main/tesla.lua"))()
 end, UDim2.new(0.1, 0, 0, 42))
+-- Fly Button and Slider (special vertical spacing)
 CreateButton(FeaturesTab, "Fly", function()
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
@@ -354,7 +354,7 @@ CreateButton(FeaturesTab, "Fly", function()
     end)
     local slider = Instance.new("Frame", FeaturesTab)
     slider.Size = UDim2.new(0.8, 0, 0, 16)
-    slider.Position = UDim2.new(0.1, 0, 0, 74)
+    slider.Position = UDim2.new(0.1, 0, 0, 106)
     slider.BackgroundColor3 = Theme.Button
     Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 6)
     local sliderButton = Instance.new("TextButton", slider)
@@ -366,7 +366,7 @@ CreateButton(FeaturesTab, "Fly", function()
     Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 6)
     local speedText = Instance.new("TextLabel", FeaturesTab)
     speedText.Size = UDim2.new(0.8, 0, 0, 16)
-    speedText.Position = UDim2.new(0.1, 0, 0, 100)
+    speedText.Position = UDim2.new(0.1, 0, 0, 130)
     speedText.Text = "Fly Speed: " .. flySpeed
     speedText.BackgroundTransparency = 1
     speedText.TextColor3 = Theme.Text
@@ -394,10 +394,10 @@ CreateButton(FeaturesTab, "Fly", function()
             end
         end)
     end)
-end, UDim2.new(0.1, 0, 0, 74))
+end, UDim2.new(0.1, 0, 0, 74)) -- fly button
 CreateButton(FeaturesTab, "Fly Off", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/un.github.io/refs/heads/main/ufly.lua"))()
-end, UDim2.new(0.1, 0, 0, 106))
+end, UDim2.new(0.1, 0, 0, 162))
 
 -- Minimize Button
 local MinimizeButton = Instance.new("TextButton", MainFrame)
