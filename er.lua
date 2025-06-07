@@ -1,81 +1,85 @@
 local TweenService, UIS, rs = game:GetService("TweenService"), game:GetService("UserInputService"), game:GetService("RunService")
 local player = game:GetService("Players").LocalPlayer
 
--- Theme and Size
+-- Theme Setup
 local Theme = {
     Background = Color3.fromRGB(15, 15, 15),
     Button = Color3.fromRGB(30, 30, 30),
     Text = Color3.fromRGB(255, 255, 255)
 }
-local UI_WIDTH, UI_HEIGHT = 350, 230
-
--- Drag helper
-local function makeDraggable(frame)
-    local dragToggle, dragStart, startPos, dragInput
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragToggle = false end
-            end)
-        end
-    end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragToggle and input == dragInput then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
 
 -- Main UI
 local ScreenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-ScreenGui.Name = "RingtaUI"
-
 local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, UI_WIDTH, 0, UI_HEIGHT)
+MainFrame.Size = UDim2.new(0, 350, 0, 230)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Theme.Background
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
-makeDraggable(MainFrame)
 
-local frameOutline = Instance.new("UIStroke", MainFrame)
+-- Draggable GUI for PC and Mobile
+local dragToggle = false
+local dragStart = nil
+local startPos = nil
+local dragInput = nil
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+MainFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragToggle and input == dragInput then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+
+-- Rainbow Outline for Main Frame
+local frameOutline = Instance.new("UIStroke")
 frameOutline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 frameOutline.Thickness = 3
+frameOutline.Parent = MainFrame
 local hue = 0
 rs.RenderStepped:Connect(function()
     hue = (hue + 0.005) % 1
     frameOutline.Color = Color3.fromHSV(hue, 1, 1)
 end)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Text = "RINGTA SCRIPTS"
-Title.Size = UDim2.new(1, -20, 0, 20)
-Title.Position = UDim2.new(0, 10, 0, 5)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Theme.Text
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.Text, Title.Size, Title.Position = "RINGTA SCRIPTS", UDim2.new(1, -20, 0, 20), UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency, Title.TextColor3, Title.Font, Title.TextSize = 1, Theme.Text, Enum.Font.GothamBold, 14
 
--- Tabs Frame (tab selector)
+-- Tabs Frame
 local TabsFrame = Instance.new("Frame", MainFrame)
 TabsFrame.Size = UDim2.new(0, 100, 1, -40)
 TabsFrame.Position = UDim2.new(0, 10, 0, 30)
 TabsFrame.BackgroundColor3 = Theme.Button
 Instance.new("UICorner", TabsFrame).CornerRadius = UDim.new(0, 6)
 
--- TabContentFrame (content area)
+-- Tab Buttons
+local Tabs = {}
 local TabContentFrame = Instance.new("Frame", MainFrame)
 TabContentFrame.Size = UDim2.new(1, -120, 1, -40)
 TabContentFrame.Position = UDim2.new(0, 110, 0, 30)
@@ -83,390 +87,422 @@ TabContentFrame.BackgroundColor3 = Theme.Background
 TabContentFrame.ClipsDescendants = true
 Instance.new("UICorner", TabContentFrame).CornerRadius = UDim.new(0, 6)
 
--- Scrollable content for buttons
-local ButtonScroll = Instance.new("ScrollingFrame", TabContentFrame)
-ButtonScroll.Size = UDim2.new(1, 0, 1, 0)
-ButtonScroll.Position = UDim2.new(0, 0, 0, 0)
-ButtonScroll.BackgroundTransparency = 1
-ButtonScroll.BorderSizePixel = 0
-ButtonScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-ButtonScroll.ScrollBarThickness = 6
-ButtonScroll.ClipsDescendants = true
-ButtonScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-local layout = Instance.new("UIListLayout", ButtonScroll)
-layout.Padding = UDim.new(0, 5)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local TAB_NAMES = {"Main", "Features", "Other", "Towns"}
-local Tabs = {}
-
--- Tab Buttons
-for i, tabName in ipairs(TAB_NAMES) do
+local function CreateTab(tabName)
     local TabButton = Instance.new("TextButton", TabsFrame)
-    TabButton.Text = tabName
-    TabButton.Size = UDim2.new(1, -10, 0, 30)
-    TabButton.Position = UDim2.new(0, 5, 0, (i-1)*35)
-    TabButton.BackgroundColor3 = Theme.Button
-    TabButton.TextColor3 = Theme.Text
-    TabButton.Font = Enum.Font.GothamBold
-    TabButton.TextSize = 14
+    TabButton.Text, TabButton.Size, TabButton.Position = tabName, UDim2.new(1, -10, 0, 30), UDim2.new(0, 5, 0, (#Tabs * 35))
+    TabButton.BackgroundColor3, TabButton.TextColor3 = Theme.Button, Theme.Text
     Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
-    Tabs[tabName] = TabButton
+    
+    local TabFrame = Instance.new("Frame", TabContentFrame)
+    TabFrame.Size = UDim2.new(1, 0, 1, 0)
+    TabFrame.Visible = (#Tabs == 0) -- Default to showing the first tab
+    table.insert(Tabs, TabFrame)
+    
+    TabButton.MouseButton1Click:Connect(function()
+        for _, frame in pairs(Tabs) do
+            frame.Visible = false
+        end
+        TabFrame.Visible = true
+    end)
+    return TabFrame
 end
 
 -- Button Template
-local function CreateButton(parent, text, callback)
+local function CreateButton(parent, text, callback, position)
     local Button = Instance.new("TextButton", parent)
-    Button.Text = text
-    Button.Size = UDim2.new(1, -14, 0, 26)
-    Button.BackgroundColor3 = Theme.Button
-    Button.TextColor3 = Theme.Text
-    Button.Font = Enum.Font.GothamBold
-    Button.TextSize = 13
+    Button.Text, Button.Size, Button.Position = text, UDim2.new(0.8, 0, 0.12, 0), position
+    Button.BackgroundColor3, Button.TextColor3 = Theme.Button, Theme.Text
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
+
+    -- Button Hover Effects
     Button.MouseEnter:Connect(function()
         Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     end)
     Button.MouseLeave:Connect(function()
         Button.BackgroundColor3 = Theme.Button
     end)
+
     Button.MouseButton1Click:Connect(callback)
-    return Button
 end
 
---------------------------------
--- STATE for Fly/Noclip/AntiVoid
---------------------------------
--- Noclip logic + buttons (in "Other" tab!)
-local noclipConnection = nil
-local function updateNoclipBtnColors(onBtn, offBtn, isOn)
-    if isOn then
-        onBtn.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-        offBtn.BackgroundColor3 = Theme.Button
+-- Main Tab for Teleports
+local MainTab = CreateTab("Main")
+
+CreateButton(MainTab, "AUTO HIT OP", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
+end, UDim2.new(0.1, 0, 0.06, 0))
+
+CreateButton(MainTab, "TP to Train", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWTPTRAIN.github.io/refs/heads/main/TRAIN.LUA"))()
+end, UDim2.new(0.1, 0, 0.2, 0))
+
+CreateButton(MainTab, "TP to Sterling", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/sterlingnotifcation.github.io/refs/heads/main/Sterling.lua'))()
+end, UDim2.new(0.1, 0, 0.34, 0))
+
+CreateButton(MainTab, "TP to TeslaLab", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/tptotesla.github.io/refs/heads/main/Tptotesla.lua'))()
+end, UDim2.new(0.1, 0, 0.48, 0))
+
+CreateButton(MainTab, "TP to Castle", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/castletpfast.github.io/refs/heads/main/FASTCASTLE.lua"))()
+end, UDim2.new(0.1, 0, 0.62, 0))
+
+CreateButton(MainTab, "TP to Unicorn", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/erhjf.github.io/refs/heads/main/hew.lua"))()
+end, UDim2.new(0.1, 0, 0.76, 0))
+
+-- Other Tab for Additional Features
+local OtherTab = CreateTab("Other")
+
+CreateButton(OtherTab, "TP to End", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/NEWNEWtpend.github.io/refs/heads/main/en.lua"))()
+end, UDim2.new(0.1, 0, 0.06, 0))
+
+
+
+CreateButton(OtherTab, "TP to Bank", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tptobank.github.io/refs/heads/main/Banktp.lua"))()
+end, UDim2.new(0.1, 0, 0.2, 0))
+
+
+-- Gun Kill Aura Toggle with Shading
+local gunKillAuraActive = false -- Keeps track of the current state
+
+-- Gun Kill Aura Button
+local GunKillAuraButton = Instance.new("TextButton", OtherTab)
+GunKillAuraButton.Text, GunKillAuraButton.Size, GunKillAuraButton.Position = "Gun Aura (Kill Mobs): OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.34, 0)
+GunKillAuraButton.BackgroundColor3, GunKillAuraButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text -- Default OFF color
+Instance.new("UICorner", GunKillAuraButton).CornerRadius = UDim.new(0, 6)
+
+-- Button Hover Effects
+GunKillAuraButton.MouseEnter:Connect(function()
+    GunKillAuraButton.BackgroundColor3 = gunKillAuraActive and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(40, 40, 40)
+end)
+GunKillAuraButton.MouseLeave:Connect(function()
+    GunKillAuraButton.BackgroundColor3 = gunKillAuraActive and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(30, 30, 30)
+end)
+
+-- Toggle Functionality
+GunKillAuraButton.MouseButton1Click:Connect(function()
+    gunKillAuraActive = not gunKillAuraActive -- Toggle the active state
+
+    if gunKillAuraActive then
+        GunKillAuraButton.Text = "Gun Aura (Kill Mobs): ON"
+        GunKillAuraButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50) -- Green for ON state
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWKILLAURA.github.io/refs/heads/main/NEWkill.lua"))()
     else
-        onBtn.BackgroundColor3 = Theme.Button
-        offBtn.BackgroundColor3 = Color3.fromRGB(205, 50, 50)
+        GunKillAuraButton.Text = "Gun Aura (Kill Mobs): OFF"
+        GunKillAuraButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Gray for OFF state
+        -- Add logic to disable "Gun Kill Aura" if needed
     end
-end
-local function enableNoclip(onBtn, offBtn)
-    if noclipConnection then return end
-    updateNoclipBtnColors(onBtn, offBtn, true)
-    noclipConnection = rs.Stepped:Connect(function()
-        local char = player.Character
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
+end)
+
+
+-- Noclip ON Button
+local NoclipOnButton = Instance.new("TextButton", OtherTab)
+NoclipOnButton.Text, NoclipOnButton.Size, NoclipOnButton.Position = "Noclip: ON", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.48, 0)
+NoclipOnButton.BackgroundColor3, NoclipOnButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
+Instance.new("UICorner", NoclipOnButton).CornerRadius = UDim.new(0, 6)
+
+-- Noclip OFF Button
+local NoclipOffButton = Instance.new("TextButton", OtherTab)
+NoclipOffButton.Text, NoclipOffButton.Size, NoclipOffButton.Position = "Noclip: OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.62, 0)
+NoclipOffButton.BackgroundColor3, NoclipOffButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
+Instance.new("UICorner", NoclipOffButton).CornerRadius = UDim.new(0, 6)
+
+local noclipConnection -- To store the active loop for noclip
+
+-- Function to enable noclip
+local function enableNoclip()
+    if noclipConnection then return end -- Prevent multiple connections
+    noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+        if player.Character then
+            for _, part in pairs(player.Character:GetDescendants()) do
                 if part:IsA("BasePart") then
-                    part.CanCollide = false
+                    part.CanCollide = false -- Disable collisions
                 end
             end
         end
     end)
 end
-local function disableNoclip(onBtn, offBtn)
+
+-- Function to disable noclip
+local function disableNoclip()
     if noclipConnection then
-        noclipConnection:Disconnect()
+        noclipConnection:Disconnect() -- Stop the loop
         noclipConnection = nil
     end
-    updateNoclipBtnColors(onBtn, offBtn, false)
-    local char = player.Character
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
+    if player.Character then
+        for _, part in pairs(player.Character:GetDescendants()) do
             if part:IsA("BasePart") then
-                part.CanCollide = true
+                part.CanCollide = true -- Enable collisions
             end
         end
     end
 end
 
--- Fly logic + slider (in Features tab!)
-local flyActive = false
-local flyRSConn, flyBV, flyBG, flySpeed
-local flySliderFrame, flySpeedTextLabel
+-- Button Functionality for Noclip ON
+NoclipOnButton.MouseButton1Click:Connect(function()
+    enableNoclip()
+    NoclipOnButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50) -- Green for visual feedback
+    NoclipOffButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Reset OFF button color
+end)
 
-local function removeFlyUI()
-    if flySliderFrame then flySliderFrame:Destroy() flySliderFrame = nil end
-    if flySpeedTextLabel then flySpeedTextLabel:Destroy() flySpeedTextLabel = nil end
+-- Button Functionality for Noclip OFF
+NoclipOffButton.MouseButton1Click:Connect(function()
+    disableNoclip()
+    NoclipOnButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Reset ON button color
+    NoclipOffButton.BackgroundColor3 = Color3.fromRGB(205, 50, 50) -- Red for visual feedback
+end)
+
+
+-- Anti-Void Button
+local antiVoidActive = false -- Keeps track of whether Anti-Void is active
+local antiVoidConnection -- Stores the connection for the loop
+
+local AntiVoidButton = Instance.new("TextButton", OtherTab)
+AntiVoidButton.Text, AntiVoidButton.Size, AntiVoidButton.Position = "Anti-Void: OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.76, 0)
+AntiVoidButton.BackgroundColor3, AntiVoidButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
+Instance.new("UICorner", AntiVoidButton).CornerRadius = UDim.new(0, 6)
+
+-- Button Hover Effects
+AntiVoidButton.MouseEnter:Connect(function()
+    AntiVoidButton.BackgroundColor3 = antiVoidActive and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(40, 40, 40)
+end)
+AntiVoidButton.MouseLeave:Connect(function()
+    AntiVoidButton.BackgroundColor3 = antiVoidActive and Color3.fromRGB(50, 205, 50) or Color3.fromRGB(30, 30, 30)
+end)
+
+-- Anti-Void Logic
+local function startAntiVoid()
+    antiVoidConnection = game:GetService("RunService").Stepped:Connect(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            if rootPart.Position.Y < -1 then -- Check if the player is below y = -1
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWTPTRAIN.github.io/refs/heads/main/TRAIN.LUA"))() -- Teleport to train
+            end
+        end
+    end)
 end
 
-local function stopFly()
-    flyActive = false
-    if flyRSConn then flyRSConn:Disconnect() flyRSConn = nil end
-    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
-    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
-    removeFlyUI()
+local function stopAntiVoid()
+    if antiVoidConnection then
+        antiVoidConnection:Disconnect() -- Stop monitoring position
+        antiVoidConnection = nil
+    end
 end
 
-local function startFly(parent)
-    if flyActive then return end
-    flyActive = true
-    local LocalPlayer = player
+-- Button Functionality
+AntiVoidButton.MouseButton1Click:Connect(function()
+    antiVoidActive = not antiVoidActive -- Toggle the active state
+
+    if antiVoidActive then
+        AntiVoidButton.Text = "Anti-Void: ON"
+        AntiVoidButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50) -- Green for ON state
+        startAntiVoid() -- Start monitoring position
+    else
+        AntiVoidButton.Text = "Anti-Void: OFF"
+        AntiVoidButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Gray for OFF state
+        stopAntiVoid() -- Stop monitoring position
+    end
+end)
+
+
+
+
+-- Towns Tab for Town Teleports
+local TownsTab = CreateTab("Towns")
+
+CreateButton(TownsTab, "Town 1", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown1.github.io/refs/heads/main/town1.lua"))()
+end, UDim2.new(0.1, 0, 0.2, 0))
+
+CreateButton(TownsTab, "Town 2", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown2.github.io/refs/heads/main/town2.lua"))()
+end, UDim2.new(0.1, 0, 0.34, 0))
+
+CreateButton(TownsTab, "Town 3", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown3.github.io/refs/heads/main/town3.lua"))()
+end, UDim2.new(0.1, 0, 0.48, 0))
+
+CreateButton(TownsTab, "Town 4", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown4.github.io/refs/heads/main/town4.lua"))()
+end, UDim2.new(0.1, 0, 0.62, 0))
+
+CreateButton(TownsTab, "Town 5", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown5.github.io/refs/heads/main/town5.lua"))()
+end, UDim2.new(0.1, 0, 0.76, 0))
+
+CreateButton(TownsTab, "Town 6", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown6.github.io/refs/heads/main/town6.lua"))()
+end, UDim2.new(0.1, 0, 0.9, 0))
+
+
+local BypassTab = CreateTab("OTHER TP")
+
+CreateButton(BypassTab, "Tp To Fort", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tpfort.github.io/refs/heads/main/Tpfort.lua"))()
+end, UDim2.new(0.1, 0, 0.06, 0))
+
+CreateButton(BypassTab, "StillWater Prision", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/StillwaterPrisontp.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.2, 0))
+
+CreateButton(BypassTab, "Jade Sword", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/fjruie/tpjadesword.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.34, 0))
+
+CreateButton(BypassTab, "Jade Mask", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/jademask.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.48, 0))
+
+CreateButton(BypassTab, "Tp To End", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newtpend.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.62, 0))
+
+CreateButton(BypassTab, "Tp Trading Post", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.76, 0))
+
+local FeaturesTab = CreateTab("Features")
+
+CreateButton(FeaturesTab, "Collect All", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/collectall.github.io/refs/heads/main/ringta.lua"))()
+end, UDim2.new(0.1, 0, 0.67, 0))
+
+CreateButton(FeaturesTab, "Auto Electrocutioner", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Electrocutioner.github.io/refs/heads/main/tesla.lua"))()
+end, UDim2.new(0.1, 0, 0.80, 0))
+
+
+CreateButton(FeaturesTab, "Fly", function()
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local UserInputService = game:GetService("UserInputService")
+    local Workspace = game:GetService("Workspace")
+    
+    local LocalPlayer = Players.LocalPlayer
     local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-    flySpeed = 50
+    
+    local flySpeed = 50  -- Default fly speed
     local velocityHandlerName = "VelocityHandler"
     local gyroHandlerName = "GyroHandler"
+    
     local controlModule = require(LocalPlayer.PlayerScripts:WaitForChild("PlayerModule"):WaitForChild("ControlModule"))
     local root = HumanoidRootPart
-    local camera = workspace.CurrentCamera
+    local camera = Workspace.CurrentCamera
     local v3inf = Vector3.new(9e9, 9e9, 9e9)
-    flyBV = Instance.new("BodyVelocity")
-    flyBV.Name = velocityHandlerName
-    flyBV.Parent = root
-    flyBV.MaxForce = v3inf
-    flyBV.Velocity = Vector3.new()
-    flyBG = Instance.new("BodyGyro")
-    flyBG.Name = gyroHandlerName
-    flyBG.Parent = root
-    flyBG.MaxTorque = v3inf
-    flyBG.P = 1000
-    flyBG.D = 50
-    flyRSConn = rs.RenderStepped:Connect(function()
-        if not flyBV.Parent or not flyBG.Parent then
-            if flyRSConn then flyRSConn:Disconnect() end
-            return
+    
+    -- Create BodyVelocity and BodyGyro for flying
+    local bv = Instance.new("BodyVelocity")
+    bv.Name = velocityHandlerName
+    bv.Parent = root
+    bv.MaxForce = v3inf
+    bv.Velocity = Vector3.new()
+    
+    local bg = Instance.new("BodyGyro")
+    bg.Name = gyroHandlerName
+    bg.Parent = root
+    bg.MaxTorque = v3inf
+    bg.P = 1000
+    bg.D = 50
+    
+    -- Update flying mechanics on each frame
+    RunService.RenderStepped:Connect(function()
+        local VelocityHandler = root:FindFirstChild(velocityHandlerName)
+        local GyroHandler = root:FindFirstChild(gyroHandlerName)
+        if VelocityHandler and GyroHandler then
+            GyroHandler.CFrame = camera.CFrame
+            local direction = controlModule:GetMoveVector()
+            VelocityHandler.Velocity =
+                (camera.CFrame.RightVector * direction.X * flySpeed) +
+                (-camera.CFrame.LookVector * direction.Z * flySpeed)
         end
-        flyBG.CFrame = camera.CFrame
-        local direction = controlModule:GetMoveVector()
-        flyBV.Velocity =
-            (camera.CFrame.RightVector * direction.X * flySpeed) +
-            (-camera.CFrame.LookVector * direction.Z * flySpeed)
     end)
-    -- Insert slider and speed text right after "Fly: ON" button (in Features tab)
-    flySliderFrame = Instance.new("Frame")
-    flySliderFrame.Name = "FlySlider"
-    flySliderFrame.Size = UDim2.new(0.93, 0, 0, 24)
-    flySliderFrame.BackgroundColor3 = Theme.Button
-    Instance.new("UICorner", flySliderFrame).CornerRadius = UDim.new(0, 6)
-    flySliderFrame.Parent = parent
-
-    local sliderBar = Instance.new("Frame", flySliderFrame)
-    sliderBar.BackgroundColor3 = Color3.fromRGB(70,70,70)
-    sliderBar.Position = UDim2.new(0.07,0,0.5,-4)
-    sliderBar.Size = UDim2.new(0.86,0,0,8)
-    sliderBar.BorderSizePixel = 0
-    sliderBar.AnchorPoint = Vector2.new(0,0.5)
-
-    local sliderButton = Instance.new("TextButton", flySliderFrame)
-    sliderButton.Size = UDim2.new(0, 18, 0, 18)
-    sliderButton.Position = UDim2.new((flySpeed-10)/990,0,0,3)
+    
+    -- Create a slider to adjust fly speed, positioned further down
+    local slider = Instance.new("Frame", FeaturesTab)
+    slider.Size = UDim2.new(0.8, 0, 0.15, 0)
+    slider.Position = UDim2.new(0.1, 0, 0.24, 0)  -- Positioned below the button
+    slider.BackgroundColor3 = Theme.Button
+    Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 6)
+    
+    -- The draggable part of the slider
+    local sliderButton = Instance.new("TextButton", slider)
+    sliderButton.Size = UDim2.new(0.1, 0, 1, 0)
+    sliderButton.Position = UDim2.new(0, 0, 0.5, 0)  -- Centered vertically in the slider
+    sliderButton.AnchorPoint = Vector2.new(0.5, 0.5)
     sliderButton.Text = ""
-    sliderButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 9)
-
-    -- Speed Text Label (below slider)
-    flySpeedTextLabel = Instance.new("TextLabel")
-    flySpeedTextLabel.Name = "FlySpeedText"
-    flySpeedTextLabel.Size = UDim2.new(0.93, 0, 0, 18)
-    flySpeedTextLabel.BackgroundTransparency = 1
-    flySpeedTextLabel.TextColor3 = Theme.Text
-    flySpeedTextLabel.Font = Enum.Font.GothamBold
-    flySpeedTextLabel.TextSize = 13
-    flySpeedTextLabel.Text = "Fly Speed: " .. flySpeed
-    flySpeedTextLabel.Parent = parent
-
-    -- Drag logic
+    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 6)
+    
+    -- Text label to show the current fly speed, positioned below the slider
+    local speedText = Instance.new("TextLabel", FeaturesTab)
+    speedText.Size = UDim2.new(0.8, 0, 0.15, 0)
+    speedText.Position = UDim2.new(0.1, 0, 0.38, 0)
+    speedText.Text = "Fly Speed: " .. flySpeed
+    speedText.BackgroundTransparency = 1
+    speedText.TextColor3 = Theme.Text
+    speedText.Font = Enum.Font.GothamBold
+    speedText.TextSize = 16
+    
+    -- Flag to track whether the slider is being dragged
     local dragging = false
+
+    -- Connect input events for dragging the slider button (supports both PC & mobile)
     sliderButton.MouseButton1Down:Connect(function(input)
         dragging = true
-        local dragConn, endConn
-        dragConn = UIS.InputChanged:Connect(function(inputChanged)
-            if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) then
-                local pos = inputChanged.Position.X - sliderBar.AbsolutePosition.X
-                local scale = math.clamp(pos / sliderBar.AbsoluteSize.X, 0, 1)
-                flySpeed = math.floor(scale * 990) + 10
-                if flySpeedTextLabel then
-                    flySpeedTextLabel.Text = "Fly Speed: " .. flySpeed
-                end
-                sliderButton.Position = UDim2.new(scale * 0.86,0,0,3)
+        local dragConn
+        local endConn
+        
+        dragConn = UserInputService.InputChanged:Connect(function(inputChanged)
+            if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement 
+                             or inputChanged.UserInputType == Enum.UserInputType.Touch) then
+                local pos = inputChanged.Position.X - slider.AbsolutePosition.X
+                local scale = math.clamp(pos / slider.AbsoluteSize.X, 0, 1)
+                flySpeed = math.floor(scale * 990) + 10  -- Map scale [0,1] to flySpeed [10, 1000]
+                speedText.Text = "Fly Speed: " .. flySpeed
+                sliderButton.Position = UDim2.new(scale, 0, 0.5, 0)
             end
         end)
-        endConn = UIS.InputEnded:Connect(function(inputEnded)
-            if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
+        
+        endConn = UserInputService.InputEnded:Connect(function(inputEnded)
+            if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 
+            or inputEnded.UserInputType == Enum.UserInputType.Touch then
                 dragging = false
                 if dragConn then dragConn:Disconnect() end
                 if endConn then endConn:Disconnect() end
             end
         end)
     end)
-end
+    
+end, UDim2.new(0.1, 0, 0.06, 0))
 
--- AntiVoid logic
-local antiVoidConnection, antiVoidActive
-local function startAntiVoid(button)
-    if antiVoidConnection then return end
-    antiVoidActive = true
-    button.Text = "Anti-Void: ON"
-    button.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-    antiVoidConnection = rs.Stepped:Connect(function()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            if rootPart.Position.Y < -1 then
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWTPTRAIN.github.io/refs/heads/main/TRAIN.LUA"))()
-            end
-        end
-    end)
-end
-local function stopAntiVoid(button)
-    if antiVoidConnection then antiVoidConnection:Disconnect() antiVoidConnection = nil end
-    antiVoidActive = false
-    button.Text = "Anti-Void: OFF"
-    button.BackgroundColor3 = Theme.Button
-end
-
--------------------
--- Tab Definitions
--------------------
-local tabDefinitions = {
-    ["Main"] = {
-        {label = "AUTO HIT OP", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
-        end},
-        {label = "TP to Train", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWTPTRAIN.github.io/refs/heads/main/TRAIN.LUA"))()
-        end},
-        {label = "TP to Castle", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/castletpfast.github.io/refs/heads/main/FASTCASTLE.lua"))()
-        end},
-        {label = "TP StillWater Prision", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/StillwaterPrisontp.github.io/refs/heads/main/ringta.lua"))()
-        end},
-        {label = "TP to Sterling", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/sterlingnotifcation.github.io/refs/heads/main/Sterling.lua"))()
-        end},
-        {label = "TP to TeslaLab", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/tptotesla.github.io/refs/heads/main/Tptotesla.lua"))()
-        end},
-        {label = "TP to Fort", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tpfort.github.io/refs/heads/main/Tpfort.lua"))()
-        end},
-        {label = "TP to Unicorn", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/erhjf.github.io/refs/heads/main/hew.lua"))()
-        end},
-        {label = "TP to End", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newtpend.github.io/refs/heads/main/ringta.lua"))()
-        end},
-        {label = "TP to Bank", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tptobank.github.io/refs/heads/main/Banktp.lua"))()
-        end},
-    },
-    ["Features"] = {
-        {label = "GunKill Aura", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWKILLAURA.github.io/refs/heads/main/NEWkill.lua"))()
-        end},
-        {label = "Collect All", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/collectall.github.io/refs/heads/main/ringta.lua"))()
-        end},
-        {label = "Auto Electrocutioner", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Electrocutioner.github.io/refs/heads/main/tesla.lua"))()
-        end},
-        {label = "TP to Trading Post", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
-        end},
-        {label = "Fly: ON", callback = function()
-            startFly(ButtonScroll)
-        end},
-        {label = "Fly: OFF", callback = function()
-            stopFly()
-        end},
-        {label = "Anti-Void: OFF", isSpecial = true, callback = function(selfBtn)
-            if antiVoidActive then stopAntiVoid(selfBtn)
-            else startAntiVoid(selfBtn) end
-        end},
-    },
-    ["Other"] = function(parent)
-        local flyBtn = CreateButton(parent, "Fly: ON", function()
-            startFly(parent)
-        end)
-        local flyOffBtn = CreateButton(parent, "Fly: OFF", function()
-            stopFly()
-        end)
-        local noclipOnBtn = CreateButton(parent, "Noclip: ON", function()
-            enableNoclip(noclipOnBtn, noclipOffBtn)
-        end)
-        local noclipOffBtn = CreateButton(parent, "Noclip: OFF", function()
-            disableNoclip(noclipOnBtn, noclipOffBtn)
-        end)
-        updateNoclipBtnColors(noclipOnBtn, noclipOffBtn, false)
-    end,
-    ["Towns"] = {
-        {label = "Town 1", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown1.github.io/refs/heads/main/town1.lua"))()
-        end},
-        {label = "Town 2", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown2.github.io/refs/heads/main/town2.lua"))()
-        end},
-        {label = "Town 3", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown3.github.io/refs/heads/main/town3.lua"))()
-        end},
-        {label = "Town 4", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown4.github.io/refs/heads/main/town4.lua"))()
-        end},
-        {label = "Town 5", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown5.github.io/refs/heads/main/town5.lua"))()
-        end},
-        {label = "Town 6", callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ringta9321/tptown6.github.io/refs/heads/main/town6.lua"))()
-        end},
-    }
-}
-
-local function loadTab(tabName)
-    for _, child in pairs(ButtonScroll:GetChildren()) do
-        if not child:IsA("UIListLayout") then child:Destroy() end
-    end
-    local def = tabDefinitions[tabName]
-    if typeof(def) == "function" then
-        def(ButtonScroll)
-    else
-        for _, buttonDef in ipairs(def) do
-            if buttonDef.isSpecial then
-                local btn = CreateButton(ButtonScroll, buttonDef.label, function()
-                    buttonDef.callback(btn)
-                end)
-            else
-                CreateButton(ButtonScroll, buttonDef.label, buttonDef.callback)
-            end
-        end
-    end
-end
-
--- Set up tab switching
-for name, button in pairs(Tabs) do
-    button.MouseButton1Click:Connect(function()
-        for _, b in pairs(Tabs) do
-            b.BackgroundColor3 = Theme.Button
-        end
-        button.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-        loadTab(name)
-    end)
-end
-Tabs.Main.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-loadTab("Main")
+CreateButton(FeaturesTab, "Fly Off", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/un.github.io/refs/heads/main/ufly.lua"))()
+end, UDim2.new(0.1, 0, 0.53, 0))
 
 -- Minimize Button
 local MinimizeButton = Instance.new("TextButton", MainFrame)
-MinimizeButton.Text = "-"
-MinimizeButton.Size = UDim2.new(0, 20, 0, 20)
-MinimizeButton.Position = UDim2.new(1, -25, 0, 5)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+MinimizeButton.Text, MinimizeButton.Size, MinimizeButton.Position = "-", UDim2.new(0, 20, 0, 20), UDim2.new(1, -25, 0, 5)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Changed to bright green for better visibility
 MinimizeButton.TextColor3 = Theme.Text
 Instance.new("UICorner", MinimizeButton).CornerRadius = UDim.new(0, 6)
 
--- Reopen Button
+-- Reopen Button (Hidden When UI is Minimized)
 local ReopenButton = Instance.new("TextButton", ScreenGui)
-ReopenButton.Text = "Open RINGTA SCRIPTS"
-ReopenButton.Size = UDim2.new(0, 150, 0, 30)
-ReopenButton.Position = UDim2.new(0.5, 0, 0, -22)
-ReopenButton.AnchorPoint = Vector2.new(0.5, 0)
-ReopenButton.Visible = false
-ReopenButton.BackgroundColor3 = Theme.Button
-ReopenButton.TextColor3 = Theme.Text
+ReopenButton.Text, ReopenButton.Size, ReopenButton.Position = "Open RINGTA SCRIPTS", UDim2.new(0, 150, 0, 30), UDim2.new(0.5, 0, 0, -22)
+ReopenButton.AnchorPoint, ReopenButton.Visible = Vector2.new(0.5, 0), false
+ReopenButton.BackgroundColor3, ReopenButton.TextColor3 = Theme.Button, Theme.Text
 Instance.new("UICorner", ReopenButton).CornerRadius = UDim.new(0, 6)
 
 local isMinimized = false
+
+-- Minimize Functionality
 MinimizeButton.MouseButton1Click:Connect(function()
-    if not isMinimized then
+    if not isMinimized then -- Only minimize if not already minimized
         isMinimized = true
         TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             Position = UDim2.new(0.5, 0, -0.7, 0),
@@ -477,8 +513,10 @@ MinimizeButton.MouseButton1Click:Connect(function()
         ReopenButton.Visible = true
     end
 end)
+
+-- Reopen Functionality
 ReopenButton.MouseButton1Click:Connect(function()
-    if isMinimized then
+    if isMinimized then -- Only reopen if currently minimized
         isMinimized = false
         ReopenButton.Visible = false
         MainFrame.Visible = true
