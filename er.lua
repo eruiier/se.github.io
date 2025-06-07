@@ -179,9 +179,24 @@ local function disableNoclip(onBtn, offBtn)
     end
 end
 
--- Fly logic + slider (in "Other" tab!)
+-- Fly logic + slider (in Features tab!)
 local flyActive = false
-local flyRSConn, flyBV, flyBG, flySpeed, flySlider, flySpeedText
+local flyRSConn, flyBV, flyBG, flySpeed
+local flySliderFrame, flySpeedTextLabel
+
+local function removeFlyUI()
+    if flySliderFrame then flySliderFrame:Destroy() flySliderFrame = nil end
+    if flySpeedTextLabel then flySpeedTextLabel:Destroy() flySpeedTextLabel = nil end
+end
+
+local function stopFly()
+    flyActive = false
+    if flyRSConn then flyRSConn:Disconnect() flyRSConn = nil end
+    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
+    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
+    removeFlyUI()
+end
+
 local function startFly(parent)
     if flyActive then return end
     flyActive = true
@@ -217,65 +232,63 @@ local function startFly(parent)
             (camera.CFrame.RightVector * direction.X * flySpeed) +
             (-camera.CFrame.LookVector * direction.Z * flySpeed)
     end)
-    -- Slider UI (always visible at the top in Other tab)
-    if not flySlider then
-        flySlider = Instance.new("Frame", parent)
-        flySlider.Size = UDim2.new(0.93, 0, 0, 18)
-        flySlider.Position = UDim2.new(0.035, 0, 0, 0)
-        flySlider.BackgroundColor3 = Theme.Button
-        Instance.new("UICorner", flySlider).CornerRadius = UDim.new(0, 6)
-        local sliderBar = Instance.new("Frame", flySlider)
-        sliderBar.BackgroundColor3 = Color3.fromRGB(70,70,70)
-        sliderBar.Position = UDim2.new(0.07,0,0.5,-4)
-        sliderBar.Size = UDim2.new(0.86,0,0,8)
-        sliderBar.BorderSizePixel = 0
-        sliderBar.AnchorPoint = Vector2.new(0,0.5)
-        local sliderButton = Instance.new("TextButton", flySlider)
-        sliderButton.Size = UDim2.new(0, 18, 0, 18)
-        sliderButton.Position = UDim2.new((flySpeed-10)/990,0,0,0)
-        sliderButton.Text = ""
-        sliderButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
-        Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 9)
-        -- Text label to show the current fly speed, above the slider
-        flySpeedText = Instance.new("TextLabel", flySlider)
-        flySpeedText.Size = UDim2.new(1, 0, 0, 16)
-        flySpeedText.Position = UDim2.new(0, 0, 0, -18)
-        flySpeedText.Text = "Fly Speed: " .. flySpeed
-        flySpeedText.BackgroundTransparency = 1
-        flySpeedText.TextColor3 = Theme.Text
-        flySpeedText.Font = Enum.Font.GothamBold
-        flySpeedText.TextSize = 13
-        -- Drag logic
-        local dragging = false
-        sliderButton.MouseButton1Down:Connect(function(input)
-            dragging = true
-            local dragConn, endConn
-            dragConn = UIS.InputChanged:Connect(function(inputChanged)
-                if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) then
-                    local pos = inputChanged.Position.X - sliderBar.AbsolutePosition.X
-                    local scale = math.clamp(pos / sliderBar.AbsoluteSize.X, 0, 1)
-                    flySpeed = math.floor(scale * 990) + 10
-                    flySpeedText.Text = "Fly Speed: " .. flySpeed
-                    sliderButton.Position = UDim2.new(scale * 0.86,0,0,0)
+    -- Insert slider and speed text right after "Fly: ON" button (in Features tab)
+    flySliderFrame = Instance.new("Frame")
+    flySliderFrame.Name = "FlySlider"
+    flySliderFrame.Size = UDim2.new(0.93, 0, 0, 24)
+    flySliderFrame.BackgroundColor3 = Theme.Button
+    Instance.new("UICorner", flySliderFrame).CornerRadius = UDim.new(0, 6)
+    flySliderFrame.Parent = parent
+
+    local sliderBar = Instance.new("Frame", flySliderFrame)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    sliderBar.Position = UDim2.new(0.07,0,0.5,-4)
+    sliderBar.Size = UDim2.new(0.86,0,0,8)
+    sliderBar.BorderSizePixel = 0
+    sliderBar.AnchorPoint = Vector2.new(0,0.5)
+
+    local sliderButton = Instance.new("TextButton", flySliderFrame)
+    sliderButton.Size = UDim2.new(0, 18, 0, 18)
+    sliderButton.Position = UDim2.new((flySpeed-10)/990,0,0,3)
+    sliderButton.Text = ""
+    sliderButton.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 9)
+
+    -- Speed Text Label (below slider)
+    flySpeedTextLabel = Instance.new("TextLabel")
+    flySpeedTextLabel.Name = "FlySpeedText"
+    flySpeedTextLabel.Size = UDim2.new(0.93, 0, 0, 18)
+    flySpeedTextLabel.BackgroundTransparency = 1
+    flySpeedTextLabel.TextColor3 = Theme.Text
+    flySpeedTextLabel.Font = Enum.Font.GothamBold
+    flySpeedTextLabel.TextSize = 13
+    flySpeedTextLabel.Text = "Fly Speed: " .. flySpeed
+    flySpeedTextLabel.Parent = parent
+
+    -- Drag logic
+    local dragging = false
+    sliderButton.MouseButton1Down:Connect(function(input)
+        dragging = true
+        local dragConn, endConn
+        dragConn = UIS.InputChanged:Connect(function(inputChanged)
+            if dragging and (inputChanged.UserInputType == Enum.UserInputType.MouseMovement or inputChanged.UserInputType == Enum.UserInputType.Touch) then
+                local pos = inputChanged.Position.X - sliderBar.AbsolutePosition.X
+                local scale = math.clamp(pos / sliderBar.AbsoluteSize.X, 0, 1)
+                flySpeed = math.floor(scale * 990) + 10
+                if flySpeedTextLabel then
+                    flySpeedTextLabel.Text = "Fly Speed: " .. flySpeed
                 end
-            end)
-            endConn = UIS.InputEnded:Connect(function(inputEnded)
-                if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                    if dragConn then dragConn:Disconnect() end
-                    if endConn then endConn:Disconnect() end
-                end
-            end)
+                sliderButton.Position = UDim2.new(scale * 0.86,0,0,3)
+            end
         end)
-    end
-end
-local function stopFly()
-    flyActive = false
-    if flyRSConn then flyRSConn:Disconnect() flyRSConn = nil end
-    if flyBV then pcall(function() flyBV:Destroy() end) flyBV = nil end
-    if flyBG then pcall(function() flyBG:Destroy() end) flyBG = nil end
-    if flySlider then pcall(function() flySlider:Destroy() end) flySlider = nil end
-    flySpeedText = nil
+        endConn = UIS.InputEnded:Connect(function(inputEnded)
+            if inputEnded.UserInputType == Enum.UserInputType.MouseButton1 or inputEnded.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+                if dragConn then dragConn:Disconnect() end
+                if endConn then endConn:Disconnect() end
+            end
+        end)
+    end)
 end
 
 -- AntiVoid logic
@@ -350,20 +363,24 @@ local tabDefinitions = {
         {label = "TP to Trading Post", callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trading.github.io/refs/heads/main/ringta.lua"))()
         end},
+        {label = "Fly: ON", callback = function()
+            startFly(ButtonScroll)
+        end},
+        {label = "Fly: OFF", callback = function()
+            stopFly()
+        end},
         {label = "Anti-Void: OFF", isSpecial = true, callback = function(selfBtn)
             if antiVoidActive then stopAntiVoid(selfBtn)
             else startAntiVoid(selfBtn) end
         end},
     },
     ["Other"] = function(parent)
-        -- Fly controls at the top
         local flyBtn = CreateButton(parent, "Fly: ON", function()
             startFly(parent)
         end)
         local flyOffBtn = CreateButton(parent, "Fly: OFF", function()
             stopFly()
         end)
-        -- Noclip controls
         local noclipOnBtn = CreateButton(parent, "Noclip: ON", function()
             enableNoclip(noclipOnBtn, noclipOffBtn)
         end)
@@ -404,7 +421,6 @@ local function loadTab(tabName)
     else
         for _, buttonDef in ipairs(def) do
             if buttonDef.isSpecial then
-                -- AntiVoid gets a reference to itself for color switching
                 local btn = CreateButton(ButtonScroll, buttonDef.label, function()
                     buttonDef.callback(btn)
                 end)
