@@ -5,8 +5,8 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local TweenService = game:GetService("TweenService")
 
 local x, y = 57, 3
-local startZ, endZ, stepZ = 30000, -49000, -1000
-local duration = 1
+local startZ, endZ, stepZ = 30000, -49000, -1250
+local duration = 0.5
 
 -- Variables to store the prison position when found
 local savedPrisonPos = nil
