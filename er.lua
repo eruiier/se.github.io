@@ -17,11 +17,7 @@ MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 MainFrame.BackgroundColor3 = Theme.Background
 
 -- Draggable GUI for PC and Mobile
-local dragToggle = false
-local dragStart = nil
-local startPos = nil
-local dragInput = nil
-
+local dragToggle, dragStart, startPos, dragInput = false, nil, nil, nil
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragToggle = true
@@ -29,20 +25,17 @@ MainFrame.InputBegan:Connect(function(input)
         startPos = MainFrame.Position
     end
 end)
-
 MainFrame.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
-
 MainFrame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragToggle = false
     end
 end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
     if dragToggle and input == dragInput then
         local delta = input.Position - dragStart
         MainFrame.Position = UDim2.new(
@@ -86,7 +79,7 @@ TabContentFrame.BackgroundColor3 = Theme.Background
 TabContentFrame.ClipsDescendants = true
 Instance.new("UICorner", TabContentFrame).CornerRadius = UDim.new(0, 6)
 
--- CreateTab: The ONLY change is TabFrame is a ScrollingFrame and CanvasSize is set!
+-- SCROLLING TAB FUNCTION (PERFECT BUTTON SIZE)
 local function CreateTab(tabName)
     local TabButton = Instance.new("TextButton", TabsFrame)
     TabButton.Text, TabButton.Size, TabButton.Position = tabName, UDim2.new(1, -10, 0, 30), UDim2.new(0, 5, 0, (#Tabs * 35))
@@ -101,73 +94,61 @@ local function CreateTab(tabName)
     TabFrame.BorderSizePixel = 0
     TabFrame.ScrollBarThickness = 6
     TabFrame.ClipsDescendants = true
-    -- Set this large enough for all your custom buttons; you can increase as needed
-    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 1000)
+    TabFrame.CanvasSize = UDim2.new(0, 0, 0, 600) -- fits about 14 buttons, increase for more!
     TabFrame.Visible = (#Tabs == 0)
     Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0, 6)
     table.insert(Tabs, TabFrame)
 
     TabButton.MouseButton1Click:Connect(function()
-        for _, frame in pairs(Tabs) do
-            frame.Visible = false
-        end
+        for _, frame in pairs(Tabs) do frame.Visible = false end
         TabFrame.Visible = true
     end)
     return TabFrame
 end
 
--- Button Template (unchanged, uses your custom positions and parent)
+-- BUTTON TEMPLATE (PERFECT SIZE: 80% wide, 26px tall)
 local function CreateButton(parent, text, callback, position)
     local Button = Instance.new("TextButton", parent)
-    Button.Text, Button.Size, Button.Position = text, UDim2.new(0.8, 0, 0.12, 0), position
+    Button.Text = text
+    Button.Size = UDim2.new(0.8, 0, 0, 26) -- 80% width, 26px height
+    Button.Position = position
     Button.BackgroundColor3, Button.TextColor3 = Theme.Button, Theme.Text
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
-
-    -- Button Hover Effects
     Button.MouseEnter:Connect(function()
         Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     end)
     Button.MouseLeave:Connect(function()
         Button.BackgroundColor3 = Theme.Button
     end)
-
     Button.MouseButton1Click:Connect(callback)
 end
 
 -- Main Tab for Teleports
 local MainTab = CreateTab("Main")
-
 CreateButton(MainTab, "AUTO HIT OP", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/newhit.github.io/refs/heads/main/hithit.lua"))()
 end, UDim2.new(0.1, 0, 0.06, 0))
-
 CreateButton(MainTab, "TP to Train", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/NEWTPTRAIN.github.io/refs/heads/main/TRAIN.LUA"))()
 end, UDim2.new(0.1, 0, 0.2, 0))
-
 CreateButton(MainTab, "TP to Sterling", function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/sterlingnotifcation.github.io/refs/heads/main/Sterling.lua'))()
 end, UDim2.new(0.1, 0, 0.34, 0))
-
 CreateButton(MainTab, "TP to TeslaLab", function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/ringtaa/tptotesla.github.io/refs/heads/main/Tptotesla.lua'))()
 end, UDim2.new(0.1, 0, 0.48, 0))
-
 CreateButton(MainTab, "TP to Castle", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/castletpfast.github.io/refs/heads/main/FASTCASTLE.lua"))()
 end, UDim2.new(0.1, 0, 0.62, 0))
-
 CreateButton(MainTab, "TP to Unicorn", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/erhjf.github.io/refs/heads/main/hew.lua"))()
 end, UDim2.new(0.1, 0, 0.76, 0))
 
 -- Other Tab for Additional Features
 local OtherTab = CreateTab("Other")
-
 CreateButton(OtherTab, "TP to End", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/NEWNEWtpend.github.io/refs/heads/main/en.lua"))()
 end, UDim2.new(0.1, 0, 0.06, 0))
-
 CreateButton(OtherTab, "TP to Bank", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tptobank.github.io/refs/heads/main/Banktp.lua"))()
 end, UDim2.new(0.1, 0, 0.2, 0))
@@ -175,7 +156,7 @@ end, UDim2.new(0.1, 0, 0.2, 0))
 -- Gun Kill Aura Toggle with Shading
 local gunKillAuraActive = false
 local GunKillAuraButton = Instance.new("TextButton", OtherTab)
-GunKillAuraButton.Text, GunKillAuraButton.Size, GunKillAuraButton.Position = "Gun Aura (Kill Mobs): OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.34, 0)
+GunKillAuraButton.Text, GunKillAuraButton.Size, GunKillAuraButton.Position = "Gun Aura (Kill Mobs): OFF", UDim2.new(0.8, 0, 0, 26), UDim2.new(0.1, 0, 0.34, 0)
 GunKillAuraButton.BackgroundColor3, GunKillAuraButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
 Instance.new("UICorner", GunKillAuraButton).CornerRadius = UDim.new(0, 6)
 GunKillAuraButton.MouseEnter:Connect(function()
@@ -197,12 +178,12 @@ GunKillAuraButton.MouseButton1Click:Connect(function()
 end)
 
 local NoclipOnButton = Instance.new("TextButton", OtherTab)
-NoclipOnButton.Text, NoclipOnButton.Size, NoclipOnButton.Position = "Noclip: ON", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.48, 0)
+NoclipOnButton.Text, NoclipOnButton.Size, NoclipOnButton.Position = "Noclip: ON", UDim2.new(0.8, 0, 0, 26), UDim2.new(0.1, 0, 0.48, 0)
 NoclipOnButton.BackgroundColor3, NoclipOnButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
 Instance.new("UICorner", NoclipOnButton).CornerRadius = UDim.new(0, 6)
 
 local NoclipOffButton = Instance.new("TextButton", OtherTab)
-NoclipOffButton.Text, NoclipOffButton.Size, NoclipOffButton.Position = "Noclip: OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.62, 0)
+NoclipOffButton.Text, NoclipOffButton.Size, NoclipOffButton.Position = "Noclip: OFF", UDim2.new(0.8, 0, 0, 26), UDim2.new(0.1, 0, 0.62, 0)
 NoclipOffButton.BackgroundColor3, NoclipOffButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
 Instance.new("UICorner", NoclipOffButton).CornerRadius = UDim.new(0, 6)
 
@@ -246,7 +227,7 @@ end)
 local antiVoidActive = false
 local antiVoidConnection
 local AntiVoidButton = Instance.new("TextButton", OtherTab)
-AntiVoidButton.Text, AntiVoidButton.Size, AntiVoidButton.Position = "Anti-Void: OFF", UDim2.new(0.8, 0, 0.12, 0), UDim2.new(0.1, 0, 0.76, 0)
+AntiVoidButton.Text, AntiVoidButton.Size, AntiVoidButton.Position = "Anti-Void: OFF", UDim2.new(0.8, 0, 0, 26), UDim2.new(0.1, 0, 0.76, 0)
 AntiVoidButton.BackgroundColor3, AntiVoidButton.TextColor3 = Color3.fromRGB(30, 30, 30), Theme.Text
 Instance.new("UICorner", AntiVoidButton).CornerRadius = UDim.new(0, 6)
 AntiVoidButton.MouseEnter:Connect(function()
@@ -370,7 +351,7 @@ CreateButton(FeaturesTab, "Fly", function()
         end
     end)
     local slider = Instance.new("Frame", FeaturesTab)
-    slider.Size = UDim2.new(0.8, 0, 0.15, 0)
+    slider.Size = UDim2.new(0.8, 0, 0, 16)
     slider.Position = UDim2.new(0.1, 0, 0.24, 0)
     slider.BackgroundColor3 = Theme.Button
     Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 6)
@@ -382,7 +363,7 @@ CreateButton(FeaturesTab, "Fly", function()
     sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Instance.new("UICorner", sliderButton).CornerRadius = UDim.new(0, 6)
     local speedText = Instance.new("TextLabel", FeaturesTab)
-    speedText.Size = UDim2.new(0.8, 0, 0.15, 0)
+    speedText.Size = UDim2.new(0.8, 0, 0, 16)
     speedText.Position = UDim2.new(0.1, 0, 0.38, 0)
     speedText.Text = "Fly Speed: " .. flySpeed
     speedText.BackgroundTransparency = 1
@@ -422,14 +403,11 @@ MinimizeButton.Text, MinimizeButton.Size, MinimizeButton.Position = "-", UDim2.n
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
 MinimizeButton.TextColor3 = Theme.Text
 Instance.new("UICorner", MinimizeButton).CornerRadius = UDim.new(0, 6)
-
--- Reopen Button (Hidden When UI is Minimized)
 local ReopenButton = Instance.new("TextButton", ScreenGui)
 ReopenButton.Text, ReopenButton.Size, ReopenButton.Position = "Open RINGTA SCRIPTS", UDim2.new(0, 150, 0, 30), UDim2.new(0.5, 0, 0, -22)
 ReopenButton.AnchorPoint, ReopenButton.Visible = Vector2.new(0.5, 0), false
 ReopenButton.BackgroundColor3, ReopenButton.TextColor3 = Theme.Button, Theme.Text
 Instance.new("UICorner", ReopenButton).CornerRadius = UDim.new(0, 6)
-
 local isMinimized = false
 MinimizeButton.MouseButton1Click:Connect(function()
     if not isMinimized then
