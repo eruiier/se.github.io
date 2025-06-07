@@ -8,8 +8,8 @@ local x = 57
 local y = 3
 local startZ = 30000
 local endZ = -49000
-local stepZ = -1000
-local duration = 1
+local stepZ = -1250
+local duration = 0.5
 
 local function getPrisonPos(stillwater)
     if stillwater:IsA("Model") then
