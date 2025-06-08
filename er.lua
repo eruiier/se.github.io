@@ -265,6 +265,10 @@ AntiVoidButton.MouseButton1Click:Connect(function()
     end
 end)
 
+CreateButton(OtherTab, "Train Kill Aura", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/hbjrev/trainkillaura.github.io/refs/heads/main/trainkill.lua"))()
+end, UDim2.new(0.1, 0, 0, 202))
+
 -- Towns Tab for Town Teleports
 local TownsTab = CreateTab("Towns")
 CreateButton(TownsTab, "Town 1", function()
@@ -290,7 +294,7 @@ local BypassTab = CreateTab("OTHER TP")
 CreateButton(BypassTab, "Tp To Fort", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/Tpfort.github.io/refs/heads/main/Tpfort.lua"))()
 end, UDim2.new(0.1, 0, 0, 10))
-CreateButton(BypassTab, "StillWater Prision", function()
+CreateButton(BypassTab, "TP StillWater Prision", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/StillwaterPrisontp.github.io/refs/heads/main/ringta.lua"))()
 end, UDim2.new(0.1, 0, 0, 42))
 CreateButton(BypassTab, "Jade Sword", function()
