@@ -1,6 +1,7 @@
 --!strict
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
@@ -8,6 +9,7 @@ local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid")
 
 local maximGunTP = Vector3.new(57, -5, -9000)
+local afterUnicornTP = Vector3.new(57, 3, 30000)
 
 local pathPoints = {
     Vector3.new(13.66, 20, 29620.67),
@@ -134,84 +136,26 @@ local function findUnicorn()
     return nil, nil
 end
 
-local runtimeItems = Workspace:FindFirstChild("RuntimeItems")
-local radius = 2000
-local updateInterval = 1
-local hideLoopStarted = false
-local hideLoopShouldRun = true
-local showLoopStarted = false
-
-local function isInRuntimeItems(instance)
-    if not runtimeItems then return false end
-    return instance:IsDescendantOf(runtimeItems)
-end
-
-local function hideVisuals(instance)
-    if isInRuntimeItems(instance) then return end
-    if instance:IsA("BasePart") then
-        instance.LocalTransparencyModifier = 1
-        instance.CanCollide = false
-    elseif instance:IsA("Decal") or instance:IsA("Texture") then
-        instance.Transparency = 1
-    elseif instance:IsA("Beam") or instance:IsA("Trail") then
-        instance.Enabled = false
-    end
-end
-
-local hideLoopThread = nil
-local function startHideLoop()
-    if hideLoopStarted then return end
-    hideLoopStarted = true
-    hideLoopShouldRun = true
-    hideLoopThread = task.spawn(function()
-        while hideLoopShouldRun do
-            for _, instance in ipairs(Workspace:GetDescendants()) do
-                hideVisuals(instance)
-            end
-            task.wait(updateInterval)
-        end
-    end)
-end
-
-local function stopHideLoop()
-    hideLoopShouldRun = false
-end
-
-local function showVisuals()
-    local character = player.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        local origin = character.HumanoidRootPart.Position
-        for _, instance in ipairs(Workspace:GetDescendants()) do
-            if instance:IsA("BasePart") and (instance.Position - origin).Magnitude <= radius then
-                instance.LocalTransparencyModifier = 0
-                instance.CanCollide = true
-            elseif (instance:IsA("Decal") or instance:IsA("Texture")) and instance:IsDescendantOf(Workspace) then
-                local parent = instance.Parent
-                if parent and parent:IsA("BasePart") and (parent.Position - origin).Magnitude <= radius then
-                    instance.Transparency = 0
-                end
-            elseif (instance:IsA("Beam") or instance:IsA("Trail")) and instance:IsDescendantOf(Workspace) then
-                local parent = instance.Parent
-                if parent and parent:IsA("BasePart") and (parent.Position - origin).Magnitude <= radius then
-                    instance.Enabled = true
-                end
-            end
+local function claimUnicornLoop(model, pos)
+    while model and model.Parent do
+        -- Teleport 60 above unicorn while trying to claim
+        hrp.CFrame = CFrame.new(pos.X, pos.Y + 5, pos.Z)
+        humanoid.Jump = true
+        -- Attempt to claim
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("StoreItem"):FireServer(model)
+        task.wait(0.15)
+        -- Check if unicorn is gone
+        local stillThere, stillPos = findUnicorn()
+        if not (stillThere and stillThere == model and stillThere.Parent) then
+            -- Collected!
+            return pos
         end
     end
-end
-
-local function startShowLoop()
-    if showLoopStarted then return end
-    showLoopStarted = true
-    task.spawn(function()
-        while true do
-            showVisuals()
-            task.wait(updateInterval)
-        end
-    end)
+    return pos
 end
 
 local function startRoutine()
+    -- Enter seat routine
     local seat
     while true do
         hrp.CFrame = CFrame.new(maximGunTP)
@@ -226,8 +170,9 @@ local function startRoutine()
         end
     end
 
-    local unicornFound = false
-    while not unicornFound do
+    while true do
+        local unicornClaimed = false
+        local unicornLastPos
         for i, pt in ipairs(pathPoints) do
             hrp.CFrame = CFrame.new(pt)
             if i == 1 then
@@ -235,25 +180,25 @@ local function startRoutine()
                     loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
                 end)
             end
-            if i == 2 then
-                startHideLoop()
-            end
             local t0 = tick()
             while tick() - t0 < tpInterval do
                 local model, pos = findUnicorn()
                 if model and pos then
-                    hrp.CFrame = CFrame.new(pos.X, pos.Y + 60, pos.Z)
-                    humanoid.Jump = true
-                    unicornFound = true
-                    stopHideLoop()
-                    startShowLoop()
+                    unicornLastPos = claimUnicornLoop(model, pos)
+                    unicornClaimed = true
                     break
                 end
                 task.wait(unicornScanInterval)
             end
-            if unicornFound then break end
+            if unicornClaimed then break end
         end
-        if not unicornFound then
+        if unicornClaimed and unicornLastPos then
+            -- After unicorn is claimed: teleport y+80, then afterUnicornTP
+            hrp.CFrame = CFrame.new(unicornLastPos.X, unicornLastPos.Y + 80, unicornLastPos.Z)
+            task.wait(0.3)
+            hrp.CFrame = afterUnicornTP
+            break
+        else
             task.wait(retryDelay)
         end
     end
