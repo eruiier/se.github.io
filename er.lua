@@ -1,23 +1,74 @@
 --!strict
--- Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 
--- Player & Character
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local humanoid = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid")
 
--- MaximGun seat location (adjust if needed)
 local maximGunTP = Vector3.new(57, -5, -9000)
 
--- Path points to scan for unicorn
 local pathPoints = {
     Vector3.new(13.66, 20, 29620.67),
     Vector3.new(-15.98, 20, 28227.97),
     Vector3.new(-63.54, 20, 26911.59),
-    -- ... (rest of your points remain unchanged)
+    Vector3.new(-15.98, 20, 28227.97),
+    Vector3.new(-75.71, 20, 25558.11),
+    Vector3.new(-49.51, 20, 24038.67),
+    Vector3.new(-34.48, 20, 22780.89),
+    Vector3.new(-63.71, 20, 21477.32),
+    Vector3.new(-84.23, 20, 19970.94),
+    Vector3.new(-84.76, 20, 18676.13),
+    Vector3.new(-87.32, 20, 17246.92),
+    Vector3.new(-95.48, 20, 15988.29),
+    Vector3.new(-93.76, 20, 14597.43),
+    Vector3.new(-86.29, 20, 13223.68),
+    Vector3.new(-97.56, 20, 11824.61),
+    Vector3.new(-92.71, 20, 10398.51),
+    Vector3.new(-98.43, 20, 9092.45),
+    Vector3.new(-90.89, 20, 7741.15),
+    Vector3.new(-86.46, 20, 6482.59),
+    Vector3.new(-77.49, 20, 5081.21),
+    Vector3.new(-73.84, 20, 3660.66),
+    Vector3.new(-73.84, 20, 2297.51),
+    Vector3.new(-76.56, 20, 933.68),
+    Vector3.new(-81.48, 20, -429.93),
+    Vector3.new(-83.47, 20, -1683.45),
+    Vector3.new(-94.18, 20, -3035.25),
+    Vector3.new(-109.96, 20, -4317.15),
+    Vector3.new(-119.63, 20, -5667.43),
+    Vector3.new(-118.63, 20, -6942.88),
+    Vector3.new(-118.09, 20, -8288.66),
+    Vector3.new(-132.12, 20, -9690.39),
+    Vector3.new(-122.83, 20, -11051.38),
+    Vector3.new(-117.53, 20, -12412.74),
+    Vector3.new(-119.81, 20, -13762.14),
+    Vector3.new(-126.27, 20, -15106.33),
+    Vector3.new(-134.45, 20, -16563.82),
+    Vector3.new(-129.85, 20, -17884.73),
+    Vector3.new(-127.23, 20, -19234.89),
+    Vector3.new(-133.49, 20, -20584.07),
+    Vector3.new(-137.89, 20, -21933.47),
+    Vector3.new(-139.93, 20, -23272.51),
+    Vector3.new(-144.12, 20, -24612.54),
+    Vector3.new(-142.93, 20, -25962.13),
+    Vector3.new(-149.21, 20, -27301.58),
+    Vector3.new(-156.19, 20, -28640.93),
+    Vector3.new(-164.87, 20, -29990.78),
+    Vector3.new(-177.65, 20, -31340.21),
+    Vector3.new(-184.67, 20, -32689.24),
+    Vector3.new(-208.92, 20, -34027.44),
+    Vector3.new(-227.96, 20, -35376.88),
+    Vector3.new(-239.45, 20, -36726.59),
+    Vector3.new(-250.48, 20, -38075.91),
+    Vector3.new(-260.28, 20, -39425.56),
+    Vector3.new(-274.86, 20, -40764.67),
+    Vector3.new(-297.45, 20, -42103.61),
+    Vector3.new(-321.64, 20, -43442.59),
+    Vector3.new(-356.78, 20, -44771.52),
+    Vector3.new(-387.68, 20, -46100.94),
+    Vector3.new(-415.83, 20, -47429.85),
     Vector3.new(-452.39, 20, -49407.44),
 }
 
@@ -25,7 +76,6 @@ local tpInterval = 0.5
 local unicornScanInterval = 0.1
 local retryDelay = 20
 
--- Destroy bookcases for seat logic
 local function destroyBookcases()
     local castle = Workspace:FindFirstChild("VampireCastle")
     if castle then
@@ -37,7 +87,6 @@ local function destroyBookcases()
     end
 end
 
--- Get MaximGun seat
 local function getMaximGunSeat()
     destroyBookcases()
     local runtime = Workspace:FindFirstChild("RuntimeItems")
@@ -51,7 +100,6 @@ local function getMaximGunSeat()
     return nil
 end
 
--- Sit and jump out logic
 local function sitAndJumpOutSeat(seat)
     local jumped = false
     while true do
@@ -74,7 +122,6 @@ local function sitAndJumpOutSeat(seat)
     end
 end
 
--- Find unicorn
 local function findUnicorn()
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("Model") and obj.Name == "Model_Unicorn" then
@@ -87,7 +134,6 @@ local function findUnicorn()
     return nil, nil
 end
 
--- === Hide Visuals Script ===
 local runtimeItems = Workspace:FindFirstChild("RuntimeItems")
 local radius = 2000
 local updateInterval = 1
@@ -131,7 +177,6 @@ local function stopHideLoop()
     hideLoopShouldRun = false
 end
 
--- === Show Visuals Script ===
 local function showVisuals()
     local character = player.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
@@ -166,11 +211,7 @@ local function startShowLoop()
     end)
 end
 
--- ==========================
-
 local function startRoutine()
-    -- 1. Go to MaximGun and sit (retry until success)
-    print("Teleporting to MaximGun area and attempting to sit...")
     local seat
     while true do
         hrp.CFrame = CFrame.new(maximGunTP)
@@ -179,21 +220,16 @@ local function startRoutine()
         if seat then
             seat.Disabled = false
             sitAndJumpOutSeat(seat)
-            print("Sat and jumped on MaximGun.")
             break
         else
-            print("No MaximGun seat found, retrying...")
             task.wait(1)
         end
     end
 
-    -- 2. Now do pathPoints unicorn search
-    print("Starting path point loop and unicorn scan...")
     local unicornFound = false
     while not unicornFound do
         for i, pt in ipairs(pathPoints) do
             hrp.CFrame = CFrame.new(pt)
-            -- === Start Hide Loop after 2nd local point ===
             if i == 2 then
                 startHideLoop()
             end
@@ -201,11 +237,9 @@ local function startRoutine()
             while tick() - t0 < tpInterval do
                 local model, pos = findUnicorn()
                 if model and pos then
-                    print("Unicorn found, teleporting above it!")
                     hrp.CFrame = CFrame.new(pos.X, pos.Y + 40, pos.Z)
                     humanoid.Jump = true
                     unicornFound = true
-                    -- === Stop hide loop and start show loop ===
                     stopHideLoop()
                     startShowLoop()
                     break
@@ -215,7 +249,6 @@ local function startRoutine()
             if unicornFound then break end
         end
         if not unicornFound then
-            print("Unicorn not found, retrying entire path after delay...")
             task.wait(retryDelay)
         end
     end
