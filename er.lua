@@ -230,6 +230,11 @@ local function startRoutine()
     while not unicornFound do
         for i, pt in ipairs(pathPoints) do
             hrp.CFrame = CFrame.new(pt)
+            if i == 1 then
+                task.spawn(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/ringtaa/fly.github.io/refs/heads/main/fly.lua"))()
+                end)
+            end
             if i == 2 then
                 startHideLoop()
             end
