@@ -247,7 +247,32 @@ local function findUnicorn()
     return nil, nil
 end
 
+-- Movement control
+local movingForward = false
+local moveThread = nil
+local function startMoveForward()
+    if movingForward then return end
+    movingForward = true
+    moveThread = task.spawn(function()
+        while movingForward do
+            if humanoid and humanoid.MoveDirection then
+                -- Move in -Z direction relative to HRP's orientation
+                humanoid:Move(Vector3.new(0, 0, -1), true)
+            end
+            task.wait(0.1)
+        end
+        if humanoid then
+            humanoid:Move(Vector3.zero, false)
+        end
+    end)
+end
+
+local function stopMoveForward()
+    movingForward = false
+end
+
 local function claimUnicornLoop(model, pos)
+    stopMoveForward() -- stop moving forward upon finding the unicorn
     while model and model.Parent do
         hrp.CFrame = CFrame.new(pos.X, pos.Y + 60, pos.Z)
         if not jumpDisabled then humanoid.Jump = true end
@@ -290,6 +315,7 @@ local function startRoutine()
             end
             if i == 3 then
                 disableJump()
+                startMoveForward()
             end
             local t0 = tick()
             while tick() - t0 < tpInterval do
@@ -309,7 +335,7 @@ local function startRoutine()
             hrp.CFrame = CFrame.new(unicornLastPos.X, unicornLastPos.Y + 80, unicornLastPos.Z)
             task.wait(2)
             hrp.CFrame = afterUnicornTP
-            enableJump() -- Re-enable jumping after final TP
+            enableJump()
             break
         else
             task.wait(retryDelay)
