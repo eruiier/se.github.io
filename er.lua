@@ -274,7 +274,7 @@ end
 local function claimUnicornLoop(model, pos)
     stopMoveForward() -- stop moving forward upon finding the unicorn
     while model and model.Parent do
-        hrp.CFrame = CFrame.new(pos.X, pos.Y + 60, pos.Z)
+        hrp.CFrame = CFrame.new(pos.X, pos.Y + 5, pos.Z)
         if not jumpDisabled then humanoid.Jump = true end
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("StoreItem"):FireServer(model)
         task.wait(0.15)
